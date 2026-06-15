@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCJ – Sistema de Registro de Asistencia</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --rojo: #BF1736; --rojo-osc: #8C0B23; --negro: #0D0D0D;
+    --gris-dark: #1a1a1a; --gris-mid: #232323; --gris-borde: #333;
+    --blanco: #F2F2F2; --gris-texto: rgba(242,242,242,0.6);
+    --verde: #2E7D32; --verde-bg: #E8F5E9;
+    --amari: #856404; --amari-bg: #FFFFF3;
+    --rojo-bg: #FFEAEA;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --radius: 8px; --radius-lg: 12px;
+    /* Tema día/noche */
+    --bg-app: #0f0f0f; --bg-fac: #0f0f0f; --text-fac: #F2F2F2;
+  }
+  body.light-mode {
+    --negro: #f8f8f8; --gris-dark: #efefef; --gris-mid: #e4e4e4;
+    --gris-borde: #d0d0d0; --blanco: #1a1a1a; --gris-texto: rgba(30,30,30,0.6);
+    --shadow: 0 2px 12px rgba(0,0,0,0.12);
+    background: #f0f0f0;
+  }
+  /* Pantalla de inicio */
+  body.light-mode .inicio-titulo { color: #1a1a1a !important; }
+  body.light-mode .inicio-sub { color: #555 !important; }
+  body.light-mode .opcion-card { background: #fff !important; border-color: #ddd !important; box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important; }
+  body.light-mode .opcion-card:hover { border-color: var(--rojo) !important; }
+  body.light-mode .opcion-label { color: #1a1a1a !important; }
+  body.light-mode .opcion-titulo { color: #1a1a1a !important; font-weight: 600 !important; }
+  body.light-mode .opcion-sub { color: #555 !important; }
+  body.light-mode .opcion-icon { background: #fce8ec !important; }
+  /* Login cards */
+  body.light-mode .login-card { background: #fff !important; border: 1px solid #e0e0e0 !important; box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important; }
+  body.light-mode .login-titulo { color: #1a1a1a !important; }
+  body.light-mode .login-sub2 { color: #555 !important; }
+  body.light-mode .login-hint { color: #888 !important; }
+  body.light-mode .login-back { color: #555 !important; }
+  body.light-mode .form-label { color: #333 !important; }
+  body.light-mode .form-input { background: #f5f5f5 !important; color: #1a1a1a !important; border-color: #ccc !important; }
+  body.light-mode .ses-info-box { background: #f5f5f5 !important; border-color: #ddd !important; }
+  body.light-mode .ses-info-tit { color: #1a1a1a !important; }
+  body.light-mode .ses-info-meta { color: #555 !important; }
+  body.light-mode .login-wrap { background: #f0f0f0 !important; }
+  /* Topbar en modo claro */
+  body.light-mode .topbar { background: #1a1a2e !important; }
+  /* Barra roja — se mantiene */
+  body.light-mode .curso-bar { background: var(--rojo) !important; }
+  /* Strip verificado */
+  body.light-mode .fac-strip { background: #e8e8e8 !important; border-left-color: var(--rojo-osc) !important; }
+  body.light-mode .fac-strip-txt, body.light-mode .fac-date { color: #333 !important; }
+  body.light-mode .fac-hora { color: #333 !important; }
+  /* Aviso sesión activa */
+  body.light-mode .aviso-strip { background: #f0f9f0 !important; color: #1a1a1a !important; }
+  /* KPIs */
+  body.light-mode .stats-strip { background: #f5f5f5 !important; border-bottom: 1px solid #ddd !important; }
+  body.light-mode .stat-lbl { color: #555 !important; }
+  body.light-mode .stat-num { color: inherit !important; }
+  /* Tarjetas de sesión */
+  body.light-mode .ses-prog { background: #ececec !important; }
+  body.light-mode .ses-fecha { color: #222 !important; }
+  body.light-mode .ses-count { color: #555 !important; }
+  body.light-mode .ses-col { border-right-color: #d0d0d0 !important; }
+  /* Toolbar */
+  body.light-mode .toolbar-dark { background: #e8e8e8 !important; border-color: #d0d0d0 !important; }
+  body.light-mode .toolbar-dark input { background: #fff !important; color: #1a1a1a !important; border-color: #ccc !important; }
+  body.light-mode .toolbar-dark select { background: #fff !important; color: #1a1a1a !important; border-color: #ccc !important; }
+  body.light-mode .legend { color: #444 !important; }
+  body.light-mode .leg-item { color: #444 !important; }
+  /* Tabla */
+  body.light-mode .fac-registro { background: #f5f5f5 !important; }
+  body.light-mode .table-wrap { background: #f5f5f5 !important; }
+  body.light-mode #tabla-fac { background: #fff !important; }
+  body.light-mode .dark-table th { background: #e0e0e0 !important; color: #1a1a1a !important; border-color: #ccc !important; }
+  body.light-mode .dark-table td { color: #1a1a1a !important; border-color: #e0e0e0 !important; background: #fff; }
+  body.light-mode .dark-table tr:nth-child(even) td { background: #f9f9f9; }
+  /* Resaltados en modo claro — deben ir DESPUÉS para ganar especificidad */
+  body.light-mode tr.fila-sin-marcar td { background: rgba(250,150,0,0.18) !important; }
+  body.light-mode tr.fila-sin-marcar:hover td { background: rgba(250,150,0,0.30) !important; }
+  body.light-mode td.col-activa { background: rgba(16,185,129,0.18) !important; border-left: 2px solid rgba(16,185,129,0.6) !important; border-right: 2px solid rgba(16,185,129,0.6) !important; }
+  body.light-mode th.col-activa { background: rgba(16,185,129,0.28) !important; color: #065f46 !important; font-weight:700 !important; }
+  body.light-mode .np { color: #1a1a1a !important; }
+  body.light-mode .cs, body.light-mode .cs-dark { color: #555 !important; }
+  body.light-mode .emp-badge-dark { background: #e0e0e0 !important; color: #333 !important; border-color: #ccc !important; }
+  body.light-mode td[style*="monospace"] { color: #555 !important; }
+  body.light-mode td[style*="0.35"], body.light-mode td[style*="0.4"] { color: #888 !important; }
+  /* Botones chk en modo claro */
+  body.light-mode .chk { border-color: #bbb !important; color: #333 !important; background: #fff !important; }
+  body.light-mode .chk.a { background: #e8f5e9 !important; border-color: #4caf50 !important; color: #2e7d32 !important; }
+  body.light-mode .chk.f { background: #ffebee !important; border-color: #ef9a9a !important; color: #c62828 !important; }
+  body.light-mode .chk.j { background: #fff8e1 !important; border-color: #ffd54f !important; color: #f57f17 !important; }
+  body.light-mode .chk.b { background: #f0f0f0 !important; color: #aaa !important; }
+  /* Fila totales */
+  body.light-mode .tot-row td { background: #e0e0e0 !important; color: #1a1a1a !important; }
+  /* Footer */
+  body.light-mode .bottom-bar { background: #1a1a2e !important; color: #fff !important; }
+  body.light-mode .bb-info span { color: rgba(255,255,255,0.8) !important; }
+  body.light-mode .btn-sm-dark { border-color: #999 !important; color: #1a1a1a !important; background: #e0e0e0 !important; }
+  body.light-mode .btn-sm-dark:hover { border-color: var(--rojo) !important; color: #fff !important; background: var(--rojo) !important; }
+  body.light-mode .leg-dark, body.light-mode .leg-item { color: #333 !important; }
+  body.light-mode .legend span[style*="0.45"] { color: #555 !important; }
+  * { transition: background-color 0.2s, color 0.15s, border-color 0.2s; }
+  html, body { height: 100%; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; overflow: hidden; }
+  .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  /* ── TOPBAR ── */
+  .topbar { background: var(--negro); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
+  .ucj-logo { display: flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; }
+  .ucj-circle { width: 32px; height: 32px; background: var(--rojo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 11px; flex-shrink: 0; }
+  .ucj-name { color: #C6D2DB; font-size: 14px; font-weight: 500; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .top-fecha { color: rgba(242,242,242,0.45); font-size: 11px; }
+  .top-badge { font-size: 11px; padding: 3px 12px; border-radius: 20px; font-weight: 500; }
+  .badge-fac { background: var(--rojo); color: #fff; }
+  .badge-adm { background: var(--rojo-osc); color: #fff; }
+  .top-user { color: rgba(242,242,242,0.7); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .btn-top-cerrar { background: transparent; border: 1px solid #444; color: rgba(242,242,242,0.6); font-size: 11px; padding: 4px 12px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .btn-top-cerrar:hover { border-color: var(--rojo); color: #fff; }
+
+  /* ── VISTAS ── */
+  .vista { display: none; flex: 1; }
+  .vista.activa { display: flex; flex-direction: column; }
+  #v-registro.activa { height: calc(100vh - 52px); overflow-y: auto; }
+  .fac-sticky-header { position: sticky; top: 0; z-index: 20; flex-shrink: 0; }
+  .fac-registro { flex: 1; display: flex; flex-direction: column; background: #0f0f0f; overflow: hidden; min-height: 0; }
+
+  /* ── PANTALLA INICIO ── */
+  .inicio-wrap { flex: 1; background: var(--negro); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 36px; min-height: calc(100vh - 52px); }
+  .inicio-logo-area { text-align: center; }
+  .inicio-circle-big { width: 64px; height: 64px; background: var(--rojo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 20px; margin: 0 auto 12px; }
+  .inicio-titulo { color: #fff; font-size: 22px; font-weight: 500; }
+  .inicio-sub { color: rgba(242,242,242,0.4); font-size: 13px; margin-top: 4px; }
+  .opciones-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 520px; }
+  .opcion-card { background: var(--gris-dark); border: 1px solid var(--gris-borde); border-radius: var(--radius-lg); padding: 32px 24px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 14px; transition: border-color 0.15s, background 0.15s; text-align: center; }
+  .opcion-card:hover { border-color: var(--rojo); background: rgba(191,23,54,0.1); }
+  .opcion-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .icon-adm { background: rgba(191,23,54,0.2); color: var(--rojo); }
+  .icon-fac { background: rgba(140,11,35,0.2); color: var(--rojo-osc); }
+  .opcion-titulo { color: #fff; font-size: 16px; font-weight: 500; }
+  .opcion-desc { color: rgba(242,242,242,0.4); font-size: 12px; line-height: 1.5; }
+  .inicio-footer { color: rgba(242,242,242,0.2); font-size: 11px; }
+
+  /* ── LOGIN ── */
+  .login-wrap { flex: 1; background: var(--negro); display: flex; align-items: center; justify-content: center; padding: 20px; min-height: calc(100vh - 52px); }
+  .login-card { background: var(--gris-dark); border: 1px solid var(--gris-borde); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 420px; }
+  .login-back { display: flex; align-items: center; gap: 6px; color: rgba(242,242,242,0.45); font-size: 12px; cursor: pointer; margin-bottom: 20px; background: none; border: none; }
+  .login-back:hover { color: #fff; }
+  .login-titulo { color: #fff; font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  .login-sub2 { color: rgba(242,242,242,0.45); font-size: 12px; margin-bottom: 20px; }
+  .ses-info-box { background: var(--gris-mid); border: 1px solid var(--gris-borde); border-radius: var(--radius); padding: 14px; margin-bottom: 18px; }
+  .ses-info-tit { color: #fff; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .ses-info-meta { color: rgba(242,242,242,0.5); font-size: 11px; line-height: 1.6; }
+  .ses-badge { display: inline-block; background: var(--rojo); color: #fff; font-size: 10px; padding: 2px 9px; border-radius: 10px; margin-top: 6px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 11px; font-weight: 500; color: rgba(242,242,242,0.6); margin-bottom: 5px; }
+  .form-input { width: 100%; background: var(--gris-mid); border: 1px solid #444; border-radius: var(--radius); padding: 10px 14px; color: #fff; font-size: 13px; font-family: inherit; }
+  .form-input:focus { outline: none; border-color: var(--rojo); }
+  .form-input::placeholder { color: rgba(242,242,242,0.25); }
+  .btn-primary { width: 100%; background: var(--rojo); color: #fff; border: none; padding: 12px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit; }
+  .btn-primary:hover { background: var(--rojo-osc); }
+  .login-hint { font-size: 10px; color: rgba(242,242,242,0.28); text-align: center; margin-top: 12px; }
+  .login-error { font-size: 12px; color: #FF6B6B; text-align: center; margin-top: 8px; display: none; }
+
+  /* ── CAMBIO CONTRASEÑA INICIAL ── */
+  .cambio-wrap { flex: 1; background: var(--negro); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .cambio-card { background: var(--gris-dark); border: 1px solid var(--rojo); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 420px; }
+  .cambio-alert { display: flex; align-items: center; gap: 10px; background: rgba(191,23,54,0.15); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 20px; }
+  .cambio-alert i { color: var(--rojo); font-size: 18px; }
+  .cambio-alert-txt { color: rgba(242,242,242,0.8); font-size: 12px; line-height: 1.5; }
+  .form-hint { font-size: 10px; color: rgba(242,242,242,0.35); margin-top: 4px; }
+
+  /* ── ADMIN LAYOUT ── */
+  .admin-layout { flex: 1; display: flex; }
+  .sidebar { width: 220px; background: var(--negro); border-right: 1px solid var(--gris-borde); display: flex; flex-direction: column; flex-shrink: 0; position: sticky; top: 52px; height: calc(100vh - 52px); overflow-y: auto; }
+  .sb-user { padding: 16px; border-bottom: 1px solid var(--gris-borde); }
+  .sb-avatar { width: 38px; height: 38px; background: var(--rojo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+  .sb-nombre { color: #fff; font-size: 12px; font-weight: 500; }
+  .sb-rol { color: rgba(242,242,242,0.4); font-size: 10px; margin-top: 2px; }
+  .sb-nav { flex: 1; padding: 8px 0; }
+  .sb-section { padding: 8px 16px 3px; font-size: 9px; font-weight: 600; color: rgba(242,242,242,0.28); text-transform: uppercase; letter-spacing: 0.8px; }
+  .sb-item { display: flex; align-items: center; gap: 9px; padding: 9px 16px; font-size: 12px; color: rgba(242,242,242,0.55); cursor: pointer; border-left: 3px solid transparent; transition: all 0.12s; }
+  .sb-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+  .sb-item.activo { background: rgba(191,23,54,0.15); color: #fff; border-left-color: var(--rojo); }
+  .sb-item i { font-size: 16px; }
+  .sb-bottom { border-top: 1px solid var(--gris-borde); padding: 8px 0; }
+  .sb-item-danger { color: var(--rojo) !important; }
+
+  /* ── MAIN CONTENT ── */
+  .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .panel { display: none; flex-direction: column; flex: 1; }
+  .panel.activo { display: flex; }
+
+  /* ── SEC HEADER ── */
+  .sec-header { background: var(--rojo); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .sec-titulo { color: #fff; font-size: 14px; font-weight: 500; }
+  .sec-sub { color: rgba(242,242,242,0.75); font-size: 11px; margin-top: 2px; }
+  .btn-nuevo { background: #fff; color: var(--negro); border: none; padding: 7px 16px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: inherit; }
+  .btn-nuevo:hover { background: var(--blanco); }
+
+  /* ── DASHBOARD ── */
+  .dash-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); padding: 16px; }
+  .kpi-label { font-size: 11px; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-valor { font-size: 28px; font-weight: 600; color: var(--negro); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .kpi-ok { color: var(--verde); }
+  .kpi-warn { color: #d97706; }
+  .kpi-rojo { color: var(--rojo); }
+  .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .dash-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); padding: 16px; }
+  .dash-card-tit { font-size: 13px; font-weight: 500; color: var(--negro); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .alert-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rojo); flex-shrink: 0; }
+  .alert-nom { font-size: 12px; font-weight: 500; color: var(--negro); }
+  .alert-meta { font-size: 11px; color: #6b7280; }
+  .alert-pct { font-size: 12px; font-weight: 600; color: var(--rojo); margin-left: auto; }
+  .curso-mini { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+  .curso-mini:last-child { border-bottom: none; }
+  .curso-mini-nom { font-size: 12px; font-weight: 500; color: var(--negro); flex: 1; }
+  .curso-mini-meta { font-size: 11px; color: #6b7280; }
+  .mini-badge-ok { background: #D1FAE5; color: #065F46; font-size: 10px; padding: 1px 8px; border-radius: 10px; }
+  .mini-badge-ac { background: #FEE2E2; color: #991B1B; font-size: 10px; padding: 1px 8px; border-radius: 10px; }
+
+  /* ── CURSOS PANEL ── */
+  .filtros-bar { padding: 12px 24px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+  .filtros-bar input { font-size: 12px; flex: 1; min-width: 160px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 7px 10px; background: #fff; font-family: inherit; }
+  .filtros-bar input:focus { outline: none; border-color: var(--rojo); }
+  .filtros-bar select { font-size: 12px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 7px 10px; background: #fff; font-family: inherit; }
+  .cursos-lista { padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; }
+  .curso-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); padding: 16px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+  .curso-card:hover { border-color: var(--rojo); box-shadow: 0 2px 8px rgba(191,23,54,0.1); }
+  .curso-card-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .curso-card-left { flex: 1; }
+  .curso-card-nom { font-size: 14px; font-weight: 500; color: var(--negro); }
+  .curso-card-meta { font-size: 12px; color: #6b7280; margin-top: 3px; }
+  .curso-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+  .curso-fecha { font-size: 11px; color: #9ca3af; }
+  .badge-ok2 { background: #D1FAE5; color: #065F46; font-size: 10px; padding: 2px 9px; border-radius: 10px; font-weight: 500; }
+  .badge-ac2 { background: #FEE2E2; color: #991B1B; font-size: 10px; padding: 2px 9px; border-radius: 10px; font-weight: 500; }
+  .prog-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .prog-bar { flex: 1; height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden; }
+  .prog-fill { height: 100%; background: var(--rojo); border-radius: 2px; }
+  .prog-txt { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+
+  /* ── DETALLE CURSO ── */
+  .det-header { background: var(--rojo); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .det-nom { color: #fff; font-size: 14px; font-weight: 500; }
+  .det-meta { color: rgba(242,242,242,0.8); font-size: 11px; margin-top: 2px; }
+  .btn-back { background: transparent; color: rgba(242,242,242,0.8); border: 1px solid rgba(242,242,242,0.3); padding: 5px 12px; border-radius: var(--radius); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; }
+  .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .fac-strip { background: var(--gris-dark); border-left: 4px solid var(--rojo-osc); padding: 8px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .fac-strip-txt { font-size: 11px; color: rgba(242,242,242,0.7); }
+  .fac-hora { color: #fff; font-weight: 500; }
+  .fac-date { background: var(--gris-mid); border: 1px solid #444; color: rgba(242,242,242,0.5); font-size: 10px; padding: 2px 10px; border-radius: 10px; }
+  .aviso-strip { background: #1a1a1a; border-left: 3px solid #C5EC4C; padding: 7px 24px; font-size: 11px; color: rgba(242,242,242,0.7); flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+  .aviso-strip .hl { color: #C5EC4C; font-weight: 500; }
+
+  /* ── STATS ── */
+  .stats-strip { display: grid; grid-template-columns: repeat(5,1fr); background: #111; border-bottom: 1px solid #333; flex-shrink: 0; }
+  .stat-item { padding: 12px; text-align: center; border-right: 1px solid #333; }
+  .stat-item:last-child { border-right: none; }
+  .stat-num { font-size: 26px; font-weight: 600; color: #fff; line-height: 1; }
+  .stat-num.g { color: #4CAF50; }
+  .stat-num.a { color: #FFB300; }
+  .stat-num.r { color: #EF5350; }
+  .stat-num.gr { color: rgba(242,242,242,0.3); }
+  .stat-lbl { font-size: 10px; color: rgba(242,242,242,0.45); margin-top: 4px; }
+
+  /* ── SESIONES PROG ── */
+  .ses-prog { display: grid; grid-template-columns: repeat(4,1fr); background: #1a1a1a; border-bottom: 1px solid #333; flex-shrink: 0; }
+  .ses-col { padding: 8px 16px; border-right: 1px solid #333; }
+  .ses-col:last-child { border-right: none; }
+  .ses-col-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .ses-fecha { font-size: 11px; color: #fff; font-weight: 500; }
+  .ses-pb { height: 3px; background: #444; border-radius: 2px; overflow: hidden; margin: 3px 0; }
+  .ses-pf { height: 100%; border-radius: 2px; }
+  .ses-count { font-size: 10px; color: rgba(242,242,242,0.4); }
+  .badge-comp { background: var(--rojo-osc); color: #fff; font-size: 9px; padding: 1px 6px; border-radius: 6px; font-weight: 500; }
+  .badge-pend { background: #333; color: rgba(242,242,242,0.4); font-size: 9px; padding: 1px 6px; border-radius: 6px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar { background: #f9fafb; padding: 8px 24px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e5e7eb; flex-shrink: 0; flex-wrap: wrap; }
+  .toolbar-dark { background: var(--gris-mid); border-bottom: 1px solid var(--gris-borde); }
+  .toolbar input { font-size: 12px; flex: 1; min-width: 160px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 6px 10px; background: #fff; font-family: inherit; }
+  .toolbar-dark input { background: var(--gris-dark); border-color: #444; color: #fff; }
+  .toolbar-dark input::placeholder { color: rgba(242,242,242,0.3); }
+  .toolbar select { font-size: 11px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 6px 10px; background: #fff; font-family: inherit; }
+  .toolbar-dark select { background: var(--gris-dark); border-color: #444; color: #fff; }
+  .ts { flex: 1; }
+  .legend { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .leg-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #6b7280; }
+  .leg-dot { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+  .leg-dot.v { background: var(--verde-bg); color: var(--verde); }
+  .leg-dot.r { background: var(--rojo-bg); color: var(--rojo); }
+  .leg-dot.j { background: var(--amari-bg); color: var(--amari); border: 1px solid #FFD54F; }
+  .leg-dot.g { background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb; }
+  .leg-dark { color: rgba(242,242,242,0.5); }
+  .btn-sm { background: transparent; border: 1px solid #d1d5db; color: #374151; font-size: 11px; padding: 5px 10px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; white-space: nowrap; }
+  .btn-sm:hover { border-color: var(--rojo); color: var(--rojo); }
+  .btn-sm-dark { border-color: #666; color: rgba(242,242,242,0.85); background: rgba(255,255,255,0.07); }
+  .btn-sm-dark:hover { border-color: var(--rojo); color: #fff; background: rgba(191,23,54,0.15); }
+  .legend { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .leg-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+  .leg-dark { color: rgba(242,242,242,0.75) !important; }
+
+  /* ── TABLA ── */
+  .table-wrap { flex: 1; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--negro); position: sticky; top: 0; z-index: 2; }
+  /* Columna sesión activa resaltada */
+  /* Filas sin marcar — modo noche */
+  tr.fila-sin-marcar { background: rgba(250,180,0,0.10) !important; }
+  tr.fila-sin-marcar:hover { background: rgba(250,180,0,0.18) !important; }
+  /* Columna activa — modo noche */
+  .col-activa { background: rgba(16,185,129,0.08) !important; border-left: 2px solid rgba(16,185,129,0.3) !important; border-right: 2px solid rgba(16,185,129,0.3) !important; }
+  th.col-activa { background: rgba(16,185,129,0.18) !important; color: #10b981 !important; font-weight:600 !important; }
+  /* Sticky header tabla facilitador */
+  #v-registro .table-wrap { overflow-y: auto; flex: 1; min-height: 0; }
+  #tabla-fac thead tr { position: sticky; top: 0; z-index: 10; background: #111; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  thead th { color: #fff; font-size: 11px; font-weight: 500; padding: 9px 10px; text-align: left; border-right: 1px solid #333; white-space: nowrap; }
+  thead th.c { text-align: center; }
+  thead th.bloq { opacity: 0.35; }
+  thead th.activa-col { background: #1a0005; border-top: 2px solid var(--rojo); }
+  tbody tr { border-bottom: 1px solid #f3f4f6; }
+  tbody tr:hover { background: #fafafa; }
+  tbody tr.bajo75 { background: rgba(191,23,54,0.04); }
+  tbody tr.bajo75:hover { background: rgba(191,23,54,0.08); }
+  tbody td { padding: 8px 10px; font-size: 12px; color: var(--negro); vertical-align: middle; border-right: 1px solid #f3f4f6; }
+  tbody td:last-child { border-right: none; }
+  /* Tabla oscura (facilitador) */
+  .dark-table thead tr { background: var(--negro); position: sticky; top: 0; z-index: 5; }
+  #v-registro .dark-table thead tr { top: 0; }
+  .chk.adm-cerrada { opacity: 0.85; border-style: dashed !important; }
+  .chk.adm-cerrada:hover { opacity: 1; border-color: var(--rojo) !important; }
+  .dark-table tbody tr { border-bottom: 1px solid #2a2a2a; }
+  .dark-table tbody tr:hover { background: #1f1f1f; }
+  .dark-table tbody tr.bajo75 { background: rgba(191,23,54,0.06); }
+  .dark-table tbody td { color: rgba(242,242,242,0.85); border-right: 1px solid #2a2a2a; }
+  .np { font-size: 12px; font-weight: 500; }
+  .cs { font-size: 10px; color: #6b7280; }
+  .cs-dark { color: rgba(242,242,242,0.4); }
+  .emp-badge { font-size: 10px; background: #f3f4f6; color: #374151; padding: 1px 7px; border-radius: 8px; border: 1px solid #e5e7eb; white-space: nowrap; }
+  .emp-badge-dark { background: #232323; color: rgba(242,242,242,0.6); border-color: #333; }
+  .chk { width: 30px; height: 30px; border-radius: 6px; border: 1.5px solid #d1d5db; background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; transition: all 0.1s; }
+  .chk.a { background: var(--verde-bg); border-color: var(--verde); color: var(--verde); }
+  .chk.f { background: var(--rojo-bg); border-color: var(--rojo); color: var(--rojo); }
+  .chk.j { background: var(--amari-bg); border-color: #FFD54F; color: var(--amari); }
+  .chk.b { opacity: 0.2; cursor: not-allowed; }
+  .pct-cell { text-align: center; }
+  .pct-num { font-size: 12px; font-weight: 600; }
+  .pct-num.ok { color: var(--verde); }
+  .pct-num.warn { color: #d97706; }
+  .pct-num.bad { color: var(--rojo); }
+  .pct-bar { height: 3px; border-radius: 2px; margin-top: 3px; }
+  .pct-bar.ok { background: var(--verde); }
+  .pct-bar.warn { background: #FFD54F; }
+  .pct-bar.bad { background: var(--rojo); }
+  .tot-row td { background: var(--rojo-osc); color: #fff; font-size: 12px; font-weight: 500; padding: 8px 10px; text-align: center; position: sticky; bottom: 0; }
+  .tot-row td:first-child { text-align: right; }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar { background: var(--negro); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; flex-wrap: wrap; gap: 8px; }
+  .bb-info { color: rgba(242,242,242,0.45); font-size: 11px; display: flex; align-items: center; gap: 16px; }
+  .autosave-ok { color: #4CAF50; display: flex; align-items: center; gap: 4px; }
+  .autosave-saving { color: #FFB300; display: flex; align-items: center; gap: 4px; }
+  .bb-btns { display: flex; gap: 8px; }
+  .btn-guardar { background: var(--rojo); color: #fff; border: none; padding: 7px 16px; border-radius: var(--radius); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: inherit; font-weight: 500; }
+  .btn-guardar:hover { background: var(--rojo-osc); }
+  .btn-exportar { background: var(--rojo); color: #fff; border: none; padding: 7px 18px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: inherit; }
+  .btn-exportar:hover { background: var(--rojo-osc); }
+
+  /* ── ADMINS PANEL ── */
+  .admins-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+  .admins-table { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); overflow: hidden; }
+  .adm-hdr { background: var(--negro); display: grid; grid-template-columns: 110px 1fr 1fr auto; padding: 9px 16px; gap: 10px; }
+  .adm-hdr span { font-size: 11px; font-weight: 500; color: #fff; }
+  .adm-row { display: grid; grid-template-columns: 110px 1fr 1fr auto; padding: 10px 16px; gap: 10px; align-items: center; border-top: 1px solid #f3f4f6; }
+  .adm-row:hover { background: #f9fafb; }
+  .adm-dni { font-size: 11px; font-family: monospace; color: #6b7280; }
+  .adm-nom { font-size: 12px; font-weight: 500; color: var(--negro); }
+  .adm-cargo { font-size: 11px; color: #6b7280; }
+  .btn-quitar { background: transparent; border: 1px solid #fecaca; color: var(--rojo); font-size: 11px; padding: 3px 10px; border-radius: var(--radius); cursor: pointer; font-family: inherit; }
+  .btn-quitar:hover { background: #fee2e2; }
+  .adm-add-trigger { padding: 11px 16px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 7px; cursor: pointer; color: var(--rojo); font-size: 12px; background: #fafafa; font-family: inherit; border: none; width: 100%; text-align: left; }
+  .adm-add-trigger:hover { background: #f3f4f6; }
+  .adm-form { display: none; flex-direction: column; gap: 12px; padding: 16px; border-top: 1px solid #e5e7eb; background: #f9fafb; }
+  .adm-form.open { display: flex; }
+  .adm-form-grid { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 10px; }
+  .adm-form-label { font-size: 11px; font-weight: 500; color: #374151; margin-bottom: 4px; display: block; }
+  .adm-form-input { width: 100%; font-size: 12px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 7px 10px; font-family: inherit; }
+  .adm-form-input:focus { outline: none; border-color: var(--rojo); }
+  .adm-form-hint { font-size: 11px; color: #6b7280; display: flex; align-items: center; gap: 5px; }
+  .adm-form-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-adm-cancel { background: transparent; border: 1px solid #d1d5db; color: #6b7280; font-size: 11px; padding: 6px 14px; border-radius: var(--radius); cursor: pointer; font-family: inherit; }
+  .btn-adm-guardar { background: var(--rojo); color: #fff; border: none; font-size: 11px; padding: 6px 16px; border-radius: var(--radius); cursor: pointer; font-weight: 500; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+
+  /* ── CAMBIAR CONTRASEÑA PANEL ── */
+  .pass-body { padding: 24px; flex: 1; overflow-y: auto; }
+  .pass-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); padding: 24px; max-width: 480px; }
+  .pass-titulo { font-size: 14px; font-weight: 500; color: var(--negro); margin-bottom: 5px; }
+  .pass-sub { font-size: 12px; color: #6b7280; margin-bottom: 20px; line-height: 1.5; }
+  .pass-label { display: block; font-size: 11px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+  .pass-input { width: 100%; font-size: 12px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 8px 12px; font-family: inherit; }
+  .pass-input:focus { outline: none; border-color: var(--rojo); }
+  .pass-hint { font-size: 10px; color: #9ca3af; margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+  .pass-select { width: 100%; font-size: 12px; border: 1px solid #d1d5db; border-radius: var(--radius); padding: 8px 12px; font-family: inherit; margin-bottom: 16px; }
+  .pass-select:focus { outline: none; border-color: var(--rojo); }
+  .btn-pass { background: var(--rojo); color: #fff; border: none; padding: 10px 20px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+  .btn-pass:hover { background: var(--rojo-osc); }
+  .btn-reset { background: #fff; color: #6b7280; border: 1px solid #d1d5db; padding: 10px 20px; border-radius: var(--radius); font-size: 12px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+  .btn-reset:hover { border-color: var(--rojo); color: var(--rojo); }
+  .pass-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .pass-divider { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+
+  /* ── PARTICIPANTE INDIVIDUAL ── */
+  .part-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .part-avatar { width: 44px; height: 44px; background: var(--rojo); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; flex-shrink: 0; }
+  .part-nom { font-size: 15px; font-weight: 500; color: var(--negro); }
+  .part-meta { font-size: 12px; color: #6b7280; }
+  .part-cursos { display: flex; flex-direction: column; gap: 8px; }
+  .part-curso-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: var(--radius); }
+  .part-curso-nom { font-size: 12px; font-weight: 500; color: var(--negro); flex: 1; }
+  .part-curso-pct { font-size: 12px; font-weight: 600; }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal-card { background: #fff; border-radius: var(--radius-lg); padding: 24px 28px; width: 100%; max-width: 400px; box-shadow: var(--shadow); }
+  .modal-titulo { font-size: 15px; font-weight: 500; color: var(--negro); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .modal-body { font-size: 12px; color: #6b7280; line-height: 1.6; margin-bottom: 16px; }
+  .modal-resumen { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: var(--radius); padding: 12px 14px; margin-bottom: 16px; }
+  .modal-row { display: flex; justify-content: space-between; font-size: 12px; color: #374151; padding: 3px 0; }
+  .modal-row span { font-weight: 500; color: var(--negro); }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-modal-cancel { background: transparent; border: 1px solid #d1d5db; color: #6b7280; padding: 8px 16px; border-radius: var(--radius); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .btn-modal-ok { background: var(--rojo); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+
+  /* ── REGISTRO FACILITADOR (pantalla oscura) ── */
+  .fac-registro .table-wrap { background: #0f0f0f; }
+  .fac-registro .toolbar { background: var(--gris-mid); border-bottom-color: var(--gris-borde); }
+  .fac-registro .toolbar input { background: var(--gris-dark); border-color: #444; color: #fff; }
+  .fac-registro .toolbar select { background: var(--gris-dark); border-color: #444; color: #fff; }
+
+  /* ── SESSIÓN TIMEOUT BANNER ── */
+  .timeout-banner { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #d97706; color: #fff; padding: 10px 24px; font-size: 13px; font-weight: 500; display: none; align-items: center; justify-content: space-between; z-index: 200; }
+  .timeout-banner.show { display: flex; }
+  .btn-keep { background: #fff; color: #d97706; border: none; padding: 5px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
+
+  /* ── AUDIT LOG ── */
+  .audit-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+  .audit-table { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--radius-lg); overflow: hidden; }
+  .audit-hdr { background: var(--negro); display: grid; grid-template-columns: 140px 120px 1fr 140px; padding: 9px 16px; gap: 10px; }
+  .audit-hdr span { font-size: 11px; font-weight: 500; color: #fff; }
+  .audit-row { display: grid; grid-template-columns: 140px 120px 1fr 140px; padding: 9px 16px; gap: 10px; border-top: 1px solid #f3f4f6; align-items: center; }
+  .audit-row:hover { background: #f9fafb; }
+  .audit-fecha { font-size: 11px; color: #6b7280; font-family: monospace; }
+  .audit-usuario { font-size: 11px; font-weight: 500; color: var(--negro); }
+  .audit-accion { font-size: 11px; color: #374151; }
+  .audit-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+  .audit-asist { background: #D1FAE5; color: #065F46; }
+  .audit-export { background: #DBEAFE; color: #1E40AF; }
+  .audit-login { background: #F3F4F6; color: #374151; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .dash-row { grid-template-columns: 1fr; }
+    .opciones-grid { grid-template-columns: 1fr; }
+    .adm-form-grid { grid-template-columns: 1fr; }
+    .stats-strip { grid-template-columns: repeat(3,1fr); }
+    .ses-prog { grid-template-columns: repeat(2,1fr); }
+    /* Móvil: tabla de facilitador visible */
+    #v-registro .fac-registro { overflow: hidden; }
+    #v-registro .table-wrap { overflow-x: auto; overflow-y: auto; flex: 1; min-height: 0; -webkit-overflow-scrolling: touch; }
+    /* KPIs compactos */
+    .stats-strip .stat-num { font-size: 18px !important; }
+    .stats-strip .stat-lbl { font-size: 9px !important; }
+    .stat-item { padding: 6px 4px !important; }
+    /* Dashboard sesiones compacto */
+    .ses-prog { min-height: 0 !important; }
+    .ses-col { padding: 5px 8px !important; }
+    .ses-fecha { font-size: 10px !important; }
+    .ses-count { font-size: 10px !important; }
+    /* Toolbar móvil */
+    .toolbar { flex-wrap: wrap; gap: 6px; padding: 6px 10px !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <a class="ucj-logo" onclick="irInicio()" href="#">
+      <div class="ucj-circle">UCJ</div>
+      <span class="ucj-name">Universidad Corporativa Jeruth</span>
+    </a>
+    <div class="topbar-right">
+      <button id="btn-theme" onclick="toggleTheme()" title="Cambiar tema" style="background:transparent;border:1px solid rgba(242,242,242,0.25);color:rgba(242,242,242,0.7);padding:5px 10px;border-radius:var(--radius);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;transition:all 0.2s">
+        <i class="ti ti-sun" id="theme-icon"></i>
+      </button>
+      <span class="top-fecha" id="top-fecha"></span>
+      <span class="top-badge" id="top-badge" style="display:none"></span>
+      <span class="top-user" id="top-user" style="display:none">
+        <i class="ti ti-user-circle"></i> <span id="top-user-txt"></span>
+      </span>
+      <button class="btn-top-cerrar" id="btn-cerrar-top" style="display:none" onclick="confirmarCerrar()">
+        <i class="ti ti-logout"></i> Cerrar sesión
+      </button>
+    </div>
+  </div>
+
+  <!-- VISTA: INICIO -->
+  <div class="vista activa" id="v-inicio">
+    <div class="inicio-wrap">
+      <div class="inicio-logo-area">
+        <div class="inicio-circle-big">UCJ</div>
+        <div class="inicio-titulo">Sistema de Registro de Asistencia</div>
+        <div class="inicio-sub">InnovAcción 2026 · Selecciona tu tipo de acceso</div>
+      </div>
+      <div class="opciones-grid">
+        <div class="opcion-card" onclick="ir('v-login-adm')">
+          <div class="opcion-icon icon-adm"><i class="ti ti-shield"></i></div>
+          <div class="opcion-titulo">Administrador</div>
+          <div class="opcion-desc">Gestión de cursos, participantes y configuración del sistema</div>
+        </div>
+        <div class="opcion-card" onclick="ir('v-login-fac')">
+          <div class="opcion-icon icon-fac"><i class="ti ti-user-check"></i></div>
+          <div class="opcion-titulo">Facilitador</div>
+          <div class="opcion-desc">Registro de asistencia de participantes por sesión</div>
+        </div>
+      </div>
+      <div class="inicio-footer">UCJ · Sistema de Capacitación Corporativa · InnovAcción 2026</div>
+    </div>
+  </div>
+
+  <!-- VISTA: LOGIN ADMIN -->
+  <div class="vista" id="v-login-adm">
+    <div class="login-wrap">
+      <div class="login-card">
+        <button class="login-back" onclick="ir('v-inicio')"><i class="ti ti-arrow-left"></i> Volver</button>
+        <div class="login-titulo">Acceso de Administrador</div>
+        <div class="login-sub2">Ingresa tus credenciales para continuar</div>
+        <div class="form-group">
+          <label class="form-label">DNI</label>
+          <input class="form-input" type="text" id="adm-dni" placeholder="Ingresa tu DNI" maxlength="8" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input class="form-input" type="password" id="adm-pass" placeholder="••••••••" />
+        </div>
+        <button class="btn-primary" onclick="loginAdmin()">
+          <i class="ti ti-arrow-right"></i> Ingresar
+        </button>
+        <div class="login-error" id="adm-err">DNI o contraseña incorrectos.</div>
+        <div class="login-hint">¿Primer ingreso? Tu contraseña inicial es tu DNI. Se te pedirá cambiarla.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA: CAMBIO CONTRASEÑA INICIAL -->
+  <div class="vista" id="v-cambio-inicial">
+    <div class="cambio-wrap">
+      <div class="cambio-card">
+        <div class="cambio-alert">
+          <i class="ti ti-lock"></i>
+          <div class="cambio-alert-txt">Es tu primer ingreso al sistema. Por seguridad debes establecer una contraseña personal diferente a tu DNI.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nueva contraseña</label>
+          <input class="form-input" type="password" id="nueva-pass" placeholder="Mínimo 8 caracteres" />
+          <div class="form-hint" style="color:rgba(242,242,242,0.35);margin-top:4px">⚠ No puede ser igual a tu DNI</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirmar contraseña</label>
+          <input class="form-input" type="password" id="conf-pass" placeholder="Repite la contraseña" />
+        </div>
+        <button class="btn-primary" onclick="cambiarPassInicial()">
+          <i class="ti ti-check"></i> Establecer contraseña y continuar
+        </button>
+        <div class="login-error" id="cambio-err">Las contraseñas no coinciden o son inválidas.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA: PANEL ADMIN -->
+  <div class="vista" id="v-admin">
+    <div class="admin-layout">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="sb-user">
+          <div class="sb-avatar" id="sb-avatar">MY</div>
+          <div class="sb-nombre" id="sb-nombre">Yllescas C., Maria del Carmen</div>
+          <div class="sb-rol" id="sb-rol">👑 Administrador principal</div>
+        </div>
+        <div class="sb-nav">
+          <div class="sb-section">Panel</div>
+          <div class="sb-item activo" id="nav-dashboard" onclick="showPanel('dashboard')">
+            <i class="ti ti-layout-dashboard"></i> Dashboard
+          </div>
+          <div class="sb-section" style="margin-top:8px">Capacitación</div>
+          <div class="sb-item" id="nav-cursos" onclick="showPanel('cursos')">
+            <i class="ti ti-book"></i> Cursos
+          </div>
+          <div class="sb-item" id="nav-participante" onclick="showPanel('participante')">
+            <i class="ti ti-user-search"></i> Buscar participante
+          </div>
+          <div class="sb-section" style="margin-top:8px">Sistema</div>
+          <div class="sb-item" id="nav-admins" onclick="showPanel('admins')">
+            <i class="ti ti-users"></i> Administradores
+          </div>
+          <div class="sb-item" id="nav-pass" onclick="showPanel('pass')">
+            <i class="ti ti-lock"></i> Cambiar contraseña
+          </div>
+          <div class="sb-item" id="nav-audit" onclick="showPanel('audit')">
+            <i class="ti ti-clipboard-list"></i> Auditoría
+          </div>
+        </div>
+        <div class="sb-bottom">
+          <div class="sb-item sb-item-danger" onclick="confirmarCerrar()">
+            <i class="ti ti-logout"></i> Cerrar sesión
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENIDO PRINCIPAL -->
+      <div class="main-content">
+
+        <!-- DASHBOARD -->
+        <div class="panel activo" id="panel-dashboard">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Dashboard</div><div class="sec-sub">Resumen del programa InnovAcción 2026</div></div>
+          </div>
+          <div class="dash-body">
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-label">Participantes únicos</div>
+                <div class="kpi-valor">68</div>
+                <div class="kpi-sub">en 3 cursos completados</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">% Asistencia promedio</div>
+                <div class="kpi-valor kpi-ok">91%</div>
+                <div class="kpi-sub">sobre todos los cursos</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Cursos completados</div>
+                <div class="kpi-valor">3 <span style="font-size:16px;color:#9ca3af">/ 4</span></div>
+                <div class="kpi-sub">1 en curso actualmente</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Bajo 75% asistencia</div>
+                <div class="kpi-valor kpi-warn">3</div>
+                <div class="kpi-sub">participantes en riesgo</div>
+              </div>
+            </div>
+            <div class="dash-row">
+              <div class="dash-card">
+                <div class="dash-card-tit"><i class="ti ti-alert-circle" style="color:var(--rojo)"></i> Participantes bajo 75%</div>
+                <div class="alert-item">
+                  <div class="alert-dot"></div>
+                  <div><div class="alert-nom">Atoche Arévalo, Mildred Yannina</div><div class="alert-meta">Sinercorp · Claude Básico Gpo. 1</div></div>
+                  <div class="alert-pct">50%</div>
+                </div>
+                <div class="alert-item">
+                  <div class="alert-dot"></div>
+                  <div><div class="alert-nom">Medina Romero, Luis Arturo</div><div class="alert-meta">EL · Claude Básico Gpo. 1</div></div>
+                  <div class="alert-pct">50%</div>
+                </div>
+                <div class="alert-item">
+                  <div class="alert-dot"></div>
+                  <div><div class="alert-nom">Pelaez Gallegos, Crhistian Joel</div><div class="alert-meta">Lukers · Claude Básico Gpo. 1</div></div>
+                  <div class="alert-pct">50%</div>
+                </div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-tit"><i class="ti ti-book" style="color:var(--rojo)"></i> Estado de cursos</div>
+                <div class="curso-mini">
+                  <div><div class="curso-mini-nom">Claude Nivel Básico – Gpo. 1</div><div class="curso-mini-meta">Jun 2026 · César Asmat · 32 part.</div></div>
+                  <span class="mini-badge-ac">En curso</span>
+                </div>
+                <div class="curso-mini">
+                  <div><div class="curso-mini-nom">Introducción a la IA</div><div class="curso-mini-meta">May 2026 · Elek Romero · 30 part.</div></div>
+                  <span class="mini-badge-ok">Completo</span>
+                </div>
+                <div class="curso-mini">
+                  <div><div class="curso-mini-nom">Bizagi 2026</div><div class="curso-mini-meta">May 2026 · Rodrigo R. · 16 part.</div></div>
+                  <span class="mini-badge-ok">Completo</span>
+                </div>
+                <div class="curso-mini">
+                  <div><div class="curso-mini-nom">Formación de Facilitadores</div><div class="curso-mini-meta">Abr 2026 · Iosef Navarro · 28 part.</div></div>
+                  <span class="mini-badge-ok">Completo</span>
+                </div>
+              </div>
+            </div>
+            <div class="dash-card" style="max-width:100%">
+              <div class="dash-card-tit"><i class="ti ti-chart-bar" style="color:var(--rojo)"></i> Integración Office 365</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px">
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:var(--radius);padding:12px;text-align:center">
+                  <i class="ti ti-brand-office" style="font-size:24px;color:#0078d4"></i>
+                  <div style="font-size:12px;font-weight:500;color:var(--negro);margin-top:6px">SharePoint</div>
+                  <div style="font-size:11px;color:#6b7280">Backup automático · Activo</div>
+                  <div style="font-size:10px;color:#10b981;margin-top:4px">● Último backup: hoy 00:00</div>
+                </div>
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:var(--radius);padding:12px;text-align:center">
+                  <i class="ti ti-list-check" style="font-size:24px;color:#0078d4"></i>
+                  <div style="font-size:12px;font-weight:500;color:var(--negro);margin-top:6px">Microsoft Lists</div>
+                  <div style="font-size:11px;color:#6b7280">Log de auditoría · Activo</div>
+                  <div style="font-size:10px;color:#10b981;margin-top:4px">● 24 registros hoy</div>
+                </div>
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:var(--radius);padding:12px;text-align:center">
+                  <i class="ti ti-automatic-gearbox" style="font-size:24px;color:#0078d4"></i>
+                  <div style="font-size:12px;font-weight:500;color:var(--negro);margin-top:6px">Power Automate</div>
+                  <div style="font-size:11px;color:#6b7280">3 flujos activos</div>
+                  <div style="font-size:10px;color:#10b981;margin-top:4px">● Notificaciones · Backup · Alertas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CURSOS -->
+        <div class="panel" id="panel-cursos">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Cursos</div><div class="sec-sub">InnovAcción 2026 y otros programas</div></div>
+            <button class="btn-nuevo"><i class="ti ti-plus"></i> Nuevo curso</button>
+          </div>
+          <div class="filtros-bar">
+            <i class="ti ti-search" style="color:#9ca3af;font-size:15px"></i>
+            <input type="text" placeholder="Buscar curso por nombre..." id="filtro-cursos" oninput="filtrarCursos()" />
+            <select onchange="filtrarCursos()" id="filtro-anio">
+              <option value="">Todos los años</option>
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+            </select>
+            <select onchange="filtrarCursos()" id="filtro-mes">
+              <option value="">Todos los meses</option>
+              <option value="Abr">Abril</option>
+              <option value="May">Mayo</option>
+              <option value="Jun" selected>Junio</option>
+            </select>
+          </div>
+          <div class="cursos-lista" id="cursos-lista">
+            <!-- Renderizado por JS -->
+          </div>
+        </div>
+
+        <!-- DETALLE CURSO (Admin) -->
+        <div class="panel" id="panel-detalle">
+          <div class="det-header">
+            <div>
+              <div class="det-nom" id="det-nom">Claude Nivel Básico – Grupo 1</div>
+              <div class="det-meta" id="det-meta">César Asmat Rabanal · Tándem · 32 participantes · 4 ses. · 8 hrs</div>
+            </div>
+            <button class="btn-back" onclick="showPanel('cursos')"><i class="ti ti-arrow-left"></i> Volver a cursos</button>
+          </div>
+          <div class="aviso-strip">
+            <i class="ti ti-info-circle" style="color:#C5EC4C;font-size:14px"></i>
+            <span id="info-proxima-ses-admin"></span>
+          </div>
+          <div class="stats-strip">
+            <div class="stat-item"><div class="stat-num g">32</div><div class="stat-lbl">Participantes</div></div>
+            <div class="stat-item"><div class="stat-num g" id="dash-s1">–</div><div class="stat-lbl">Asistieron S1</div></div>
+            <div class="stat-item"><div class="stat-num g" id="dash-s2">–</div><div class="stat-lbl">Asistieron S2</div></div>
+            <div class="stat-item"><div class="stat-num a" id="dash-bajo">–</div><div class="stat-lbl">Bajo 75%</div></div>
+            <div class="stat-item"><div class="stat-num gr" id="dash-pend">2</div><div class="stat-lbl">Pendientes</div></div>
+          </div>
+          <div class="ses-prog">
+            <div class="ses-col"><div class="ses-col-head"><span class="ses-fecha">Miérc. 03/06</span><span class="badge-comp">Completa</span></div><div class="ses-pb"><div id="ses-pb1" class="ses-pf" style="width:0%;background:var(--rojo-osc)"></div></div><div class="ses-count" id="ses-count1">–</div></div>
+            <div class="ses-col"><div class="ses-col-head"><span class="ses-fecha">Vier. 05/06</span><span class="badge-comp">Completa</span></div><div class="ses-pb"><div id="ses-pb2" class="ses-pf" style="width:0%;background:var(--rojo-osc)"></div></div><div class="ses-count" id="ses-count2">–</div></div>
+            <div class="ses-col" style="opacity:0.5"><div class="ses-col-head"><span class="ses-fecha">Miérc. 10/06</span><span class="badge-pend">Mañana</span></div><div class="ses-pb"><div class="ses-pf" style="width:0%"></div></div><div class="ses-count">Pendiente</div></div>
+            <div class="ses-col" style="opacity:0.3"><div class="ses-col-head"><span class="ses-fecha">Vier. 12/06</span><span class="badge-pend">Pendiente</span></div><div class="ses-pb"><div class="ses-pf" style="width:0%"></div></div><div class="ses-count">Pendiente</div></div>
+          </div>
+          <div class="toolbar">
+            <i class="ti ti-search" style="color:#9ca3af;font-size:14px"></i>
+            <input type="text" placeholder="Buscar participante..." oninput="filtrarTablaAdmin(this.value)" />
+            <select onchange="filtrarEstadoAdmin(this.value)">
+              <option value="">Todos</option>
+              <option value="bajo75">Bajo 75%</option>
+              <option value="faltas">Con faltas</option>
+            </select>
+            <span class="ts"></span>
+            <div class="legend">
+              <span style="font-size:11px;color:#6b7280">Estado:</span>
+              <div class="leg-item"><div class="leg-dot v">✓</div>Asistió</div>
+              <div class="leg-item"><div class="leg-dot r">✗</div>Faltó</div>
+              <div class="leg-item"><div class="leg-dot j">J</div>Justificado</div>
+            </div>
+            <button class="btn-sm" onclick="abrirModalExport()"><i class="ti ti-download"></i> Exportar Excel</button>
+          </div>
+          <div class="table-wrap">
+            <table id="tabla-admin">
+              <thead><tr>
+                <th style="width:28px">#</th>
+                <th>Apellidos y nombres</th>
+                <th>Empresa</th>
+                <th>DNI</th>
+                <th class="c th-ses">03/06</th>
+                <th class="c th-ses">05/06</th>
+                <th class="c th-ses bloq">10/06</th>
+                <th class="c th-ses bloq">12/06</th>
+                <th class="c" style="min-width:75px">% Asist.</th>
+              </tr></thead>
+              <tbody id="tbody-admin"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BUSCAR PARTICIPANTE -->
+        <div class="panel" id="panel-participante">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Buscar participante</div><div class="sec-sub">Historial individual de asistencia por curso</div></div>
+          </div>
+          <div class="filtros-bar">
+            <i class="ti ti-search" style="color:#9ca3af;font-size:15px"></i>
+            <input type="text" placeholder="Buscar por apellidos, nombre o DNI..." id="busca-part" oninput="buscarParticipante()" style="max-width:400px" />
+          </div>
+          <div style="padding:20px 24px;flex:1;overflow-y:auto">
+            <div id="part-resultado"></div>
+          </div>
+        </div>
+
+        <!-- ADMINISTRADORES -->
+        <div class="panel" id="panel-admins">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Administradores del sistema</div><div class="sec-sub">Gestión de accesos al sistema UCJ</div></div>
+          </div>
+          <div class="admins-body">
+            <div class="admins-table">
+              <div class="adm-hdr"><span>DNI</span><span>Apellidos y nombres</span><span>Cargo</span><span></span></div>
+              <div class="adm-row"><span class="adm-dni">40436677</span><span class="adm-nom">Yllescas Cárdenas, Maria del Carmen 👑</span><span class="adm-cargo">Coordinadora de Capacitación</span><span style="font-size:10px;color:#9ca3af">Admin principal</span></div>
+              <div class="adm-row"><span class="adm-dni">46144746</span><span class="adm-nom">Sanchez Sandoval, Carlos Miguel</span><span class="adm-cargo">Gerente de Sel. y Capacitación</span><button class="btn-quitar">Quitar</button></div>
+              <div class="adm-row"><span class="adm-dni">72310909</span><span class="adm-nom">Moran Suarez, Marco Andrés</span><span class="adm-cargo">Practicante de Capacitación</span><button class="btn-quitar">Quitar</button></div>
+              <div class="adm-row"><span class="adm-dni">74290396</span><span class="adm-nom">Cubas Collantes, Marycarmen</span><span class="adm-cargo">Asistente de Capacitación</span><button class="btn-quitar">Quitar</button></div>
+              <div class="adm-row"><span class="adm-dni">76805513</span><span class="adm-nom">Solano Sanchez, Gresia Giuliana</span><span class="adm-cargo">Analista de Capacitación</span><button class="btn-quitar">Quitar</button></div>
+              <button class="adm-add-trigger" id="btn-add-adm" onclick="toggleFormAdm()">
+                <i class="ti ti-plus"></i> Agregar nuevo administrador
+              </button>
+              <div class="adm-form" id="adm-form">
+                <div class="adm-form-grid">
+                  <div><label class="adm-form-label">DNI</label><input class="adm-form-input" type="text" placeholder="12345678" maxlength="8" id="new-adm-dni"/></div>
+                  <div><label class="adm-form-label">Apellidos y nombres</label><input class="adm-form-input" type="text" placeholder="Apellido, Nombre" id="new-adm-nom"/></div>
+                  <div><label class="adm-form-label">Cargo</label><input class="adm-form-input" type="text" placeholder="Ej. Analista de Capacitación" id="new-adm-cargo"/></div>
+                </div>
+                <div class="adm-form-hint"><i class="ti ti-info-circle"></i> La contraseña inicial será igual al DNI. El usuario deberá cambiarla en su primer ingreso.</div>
+                <div class="adm-form-btns">
+                  <button class="btn-adm-cancel" onclick="toggleFormAdm()">Cancelar</button>
+                  <button class="btn-adm-guardar" onclick="agregarAdmin()"><i class="ti ti-check"></i> Agregar administrador</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMBIAR CONTRASEÑA -->
+        <div class="panel" id="panel-pass">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Cambiar contraseña</div><div class="sec-sub">Gestión de contraseñas de administradores</div></div>
+          </div>
+          <div class="pass-body">
+            <div class="pass-card">
+              <div class="pass-titulo">Seleccionar administrador</div>
+              <div class="pass-sub">Puedes cambiar tu propia contraseña o la de otro administrador (solo admin principal).</div>
+              <select class="pass-select" id="pass-select-adm" onchange="onSelectAdm()">
+                <option value="">— Selecciona un administrador —</option>
+                <option value="self">Mi contraseña (Yllescas C., Maria del Carmen)</option>
+                <option value="46144746">Sanchez Sandoval, Carlos Miguel</option>
+                <option value="72310909">Moran Suarez, Marco Andrés</option>
+                <option value="74290396">Cubas Collantes, Marycarmen</option>
+                <option value="76805513">Solano Sanchez, Gresia Giuliana</option>
+              </select>
+              <div id="pass-form-area" style="display:none">
+                <div id="pass-actual-group" class="form-group">
+                  <label class="pass-label">Contraseña actual</label>
+                  <input type="password" class="pass-input" placeholder="••••••••" />
+                  <div class="pass-hint"><i class="ti ti-info-circle"></i> Solo requerida para tu propia contraseña</div>
+                </div>
+                <div class="form-group">
+                  <label class="pass-label">Nueva contraseña</label>
+                  <input type="password" class="pass-input" placeholder="Mínimo 8 caracteres" />
+                  <div class="pass-hint"><i class="ti ti-alert-circle"></i> No puede ser igual al DNI del usuario</div>
+                </div>
+                <div class="form-group">
+                  <label class="pass-label">Confirmar nueva contraseña</label>
+                  <input type="password" class="pass-input" placeholder="Repite la contraseña" />
+                </div>
+                <hr class="pass-divider">
+                <div class="pass-btns">
+                  <button class="btn-pass" onclick="actualizarPassAdmin()"><i class="ti ti-lock"></i> Actualizar contraseña</button>
+                  <button class="btn-reset" id="btn-reset-pass" onclick="resetearPassAdmin()"><i class="ti ti-refresh"></i> Resetear a DNI</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUDITORÍA -->
+        <div class="panel" id="panel-audit">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Registro de auditoría</div><div class="sec-sub">Historial de acciones en el sistema · Microsoft Lists</div></div>
+          </div>
+          <div class="audit-body">
+            <div class="audit-table">
+              <div class="audit-hdr"><span>Fecha y hora</span><span>Usuario</span><span>Acción</span><span>Tipo</span></div>
+              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:17 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Habilitó registro sesión 3 · Claude Básico Gpo. 1</span><span><span class="audit-badge audit-login">Login facilitador</span></span></div>
+              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:17 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Marcó asistencia: Acuña Godoy → Asistió (03/06)</span><span><span class="audit-badge audit-asist">Asistencia</span></span></div>
+              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:18 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Marcó asistencia: Atoche Arévalo → Faltó (05/06)</span><span><span class="audit-badge audit-asist">Asistencia</span></span></div>
+              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:19 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Exportó Excel de asistencia · Claude Básico Gpo. 1</span><span><span class="audit-badge audit-export">Exportación</span></span></div>
+              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:15 pm</span><span class="audit-usuario">Yllescas C., Maria del Carmen</span><span class="audit-accion">Ingresó al sistema como administrador</span><span><span class="audit-badge audit-login">Login admin</span></span></div>
+              <div class="audit-row"><span class="audit-fecha">05/06/2026 05:33 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Habilitó registro sesión 2 · Claude Básico Gpo. 1</span><span><span class="audit-badge audit-login">Login facilitador</span></span></div>
+              <div class="audit-row"><span class="audit-fecha">00:00 backup</span><span class="audit-usuario">Power Automate</span><span class="audit-accion">Backup automático guardado en SharePoint</span><span><span class="audit-badge audit-export">Backup</span></span></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /main-content -->
+    </div><!-- /admin-layout -->
+  </div><!-- /v-admin -->
+
+  <!-- VISTA: LOGIN FACILITADOR -->
+  <div class="vista" id="v-login-fac">
+    <div class="login-wrap" style="background:var(--negro)">
+      <div class="login-card">
+        <button class="login-back" onclick="ir('v-inicio')"><i class="ti ti-arrow-left"></i> Volver</button>
+        <div class="login-titulo">Acceso de Facilitador</div>
+        <div class="login-sub2">Ingresa tu DNI para habilitar el registro de asistencia</div>
+        <div class="ses-info-box">
+          <div class="ses-info-tit">Claude Nivel Básico – Grupo 1</div>
+          <div class="ses-info-meta">César Asmat Rabanal · Tándem · Facilitador Interno<br>32 participantes · 4 sesiones · 8 horas</div>
+          <div class="ses-info-meta"><strong style="color:#fff">Próxima sesión:</strong> Miércoles 10/06/2026 · 5:30 pm</div>
+          <span class="ses-badge" id="fac-login-badge">–</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">DNI del facilitador</label>
+          <input class="form-input" type="text" id="fac-dni" placeholder="Ingresa tu DNI" maxlength="8" />
+        </div>
+        <button class="btn-primary" onclick="loginFacilitador()">
+          <i class="ti ti-lock-open"></i> Habilitar registro de asistencia
+        </button>
+        <div class="login-error" id="fac-err">DNI no corresponde al facilitador de este curso.</div>
+        <div class="login-hint">Solo el facilitador registrado puede tomar asistencia · La hora se graba automáticamente en Microsoft Lists</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA: REGISTRO FACILITADOR -->
+  <div class="vista" id="v-registro">
+    <div class="fac-registro">
+      <div class="fac-sticky-header">
+      <div class="curso-bar" style="background:var(--rojo);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <div style="color:#fff;font-size:13px;font-weight:500">Claude Nivel Básico – Grupo 1</div>
+          <div style="color:rgba(242,242,242,0.8);font-size:11px;margin-top:2px">Asmat Rabanal, César Sebastian · Tándem · 32 participantes · 4 ses. · 8 hrs · 5:30 pm</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="toggleFullscreen()" id="btn-full" style="background:transparent;border:1px solid rgba(242,242,242,0.3);color:rgba(242,242,242,0.8);padding:5px 12px;border-radius:var(--radius);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit">
+            <i class="ti ti-maximize"></i> Pantalla completa
+          </button>
+
+        </div>
+      </div>
+      <div class="fac-strip">
+        <span class="fac-strip-txt"><i class="ti ti-user-check" style="color:var(--rojo-osc)"></i> Verificado: <span class="fac-hora">Asmat Rabanal, César Sebastian</span> · DNI 18168534 · Habilitado a las <span class="fac-hora" id="hora-habil"></span></span>
+        <span class="fac-date" id="fecha-habil"></span>
+      </div>
+      <div class="aviso-strip">
+        <i class="ti ti-info-circle" style="color:#C5EC4C;font-size:13px"></i>
+        <span id="info-proxima-ses-fac"></span>
+      </div>
+      <div class="toolbar toolbar-dark" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="btn-sm btn-sm-dark" onclick="marcarTodos('a')"><i class="ti ti-check"></i> Todos asistieron</button>
+          <button class="btn-sm btn-sm-dark" onclick="marcarTodos('')"><i class="ti ti-eraser"></i> Limpiar</button>
+          <div class="legend" style="margin-left:4px">
+            <span style="font-size:11px;color:rgba(242,242,242,0.45)">Rotar clic:</span>
+            <div class="leg-item leg-dark"><div class="leg-dot g">–</div>Sin marcar</div>
+            <div class="leg-item leg-dark"><div class="leg-dot v">✓</div>Asistió</div>
+            <div class="leg-item leg-dark"><div class="leg-dot r">✗</div>Faltó</div>
+            <div class="leg-item leg-dark"><div class="leg-dot j">J</div>Justificado</div>
+          </div>
+          <span id="progreso-fac" style="font-size:12px;color:#10b981;margin-left:8px;font-weight:600"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <i class="ti ti-search" style="color:rgba(242,242,242,0.4);font-size:14px"></i>
+          <input type="text" placeholder="Buscar por apellidos, empresa o DNI..." id="buscador-fac" oninput="filtrarFac()" />
+          <select onchange="filtrarEstadoFac(this.value)" style="background:var(--gris-dark);border-color:#444;color:#fff">
+            <option value="">Todos</option>
+            <option value="bajo75">Bajo 75%</option>
+            <option value="faltas">Con faltas</option>
+            <option value="sinmarcar">Sin marcar</option>
+          </select>
+        </div>
+      </div>
+      </div><!-- /fac-sticky-header -->
+      <div class="table-wrap" style="background:#0f0f0f">
+        <table class="dark-table" id="tabla-fac">
+          <thead id="thead-fac-sticky"><tr>
+            <th style="width:28px">#</th>
+            <th style="width:90px;text-align:center;font-size:11px" id="th-ses-activa-fac">–</th>
+            <th>Apellidos y nombres</th>
+            <th>Cargo</th>
+            <th>Empresa</th>
+            <th>DNI</th>
+            <th class="c th-ses-fac">–</th>
+            <th class="c th-ses-fac">–</th>
+            <th class="c th-ses-fac">–</th>
+            <th class="c th-ses-fac">–</th>
+            <th class="c" style="min-width:75px">% Asist.</th>
+          </tr></thead>
+          <tbody id="tbody-fac"></tbody>
+        </table>
+      </div>
+      <!-- ÁREA INFERIOR: Botones → Dashboard → KPIs → Footer -->
+      <div style="background:#1a1a1a;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;border-top:2px solid var(--rojo);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:16px">
+          <span><i class="ti ti-clock"></i> Habilitado: <span id="hora-bottom" style="color:#fff"></span></span>
+          <span class="autosave-ok" id="autosave-status"><i class="ti ti-check"></i> Guardado automáticamente</span>
+          <span id="bajo-txt" style="color:rgba(242,242,242,0.6)"></span>
+          <span style="color:rgba(242,242,242,0.3)">· SharePoint sync activo</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-guardar" onclick="guardar()"><i class="ti ti-device-floppy"></i> Guardar</button>
+          <button class="btn-exportar" onclick="abrirModalExport()"><i class="ti ti-download"></i> Exportar Excel</button>
+        </div>
+      </div>
+      <!-- BARRA DE SESIONES — dinámica -->
+      <div class="ses-prog" id="ses-prog-fac" style="margin:0;border-top:1px solid #2a2a2a;flex-shrink:0">
+      </div>
+      <!-- KPIs -->
+      <div class="stats-strip" style="grid-template-columns:repeat(3,1fr);border-top:1px solid #2a2a2a;border-bottom:none;flex-shrink:0">
+        <div class="stat-item"><div class="stat-num g" id="fs-total">32</div><div class="stat-lbl">Participantes</div></div>
+        <div class="stat-item"><div class="stat-num a" id="fs-pct-asist">–</div><div class="stat-lbl">% Asist. Prom. a la fecha</div></div>
+        <div class="stat-item"><div class="stat-num gr" id="fac-pend">–</div><div class="stat-lbl">Ses. pendientes</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALES -->
+  <div class="modal-overlay" id="modal-motivo">
+    <div class="modal-card">
+      <div class="modal-titulo"><i class="ti ti-edit" style="color:var(--rojo)"></i> Modificar asistencia</div>
+      <div class="modal-body">
+        <div id="modal-motivo-titulo" style="font-weight:600;color:#1a1a1a;margin-bottom:4px"></div>
+        <div id="modal-motivo-detalle" style="font-size:11px;color:#6b7280;margin-bottom:16px"></div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:6px">Motivo de la modificación <span style="color:var(--rojo)">*</span></label>
+        <textarea id="modal-motivo-txt" placeholder="Describe el motivo de esta corrección..." style="width:100%;min-height:80px;border:1px solid #d1d5db;border-radius:var(--radius);padding:8px;font-family:inherit;font-size:12px;resize:vertical;box-sizing:border-box"></textarea>
+        <div id="modal-motivo-err" style="display:none;color:var(--rojo);font-size:11px;margin-top:4px">El motivo es obligatorio para modificar sesiones cerradas.</div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-modal-cancel" onclick="cancelarMotivoAdmin()">Cancelar</button>
+        <button class="btn-modal-ok" onclick="confirmarMotivoAdmin()"><i class="ti ti-check"></i> Confirmar cambio</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modal-export">
+    <div class="modal-card">
+      <div class="modal-titulo"><i class="ti ti-download" style="color:var(--rojo)"></i> Confirmar exportación</div>
+      <div class="modal-body">Estás a punto de exportar el registro. El archivo se guardará también en SharePoint automáticamente.</div>
+      <div class="modal-resumen">
+        <div class="modal-row">Curso <span>Claude Nivel Básico – Grupo 1</span></div>
+        <div class="modal-row">Participantes <span>32</span></div>
+        <div class="modal-row">Sesiones registradas <span>2 de 4</span></div>
+        <div class="modal-row">Sesiones pendientes <span style="color:#d97706">2 (10/06 y 12/06)</span></div>
+        <div class="modal-row">Destino <span style="color:#0078d4">SharePoint · InnovAcción 2026</span></div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-modal-cancel" onclick="cerrarModal('modal-export')">Cancelar</button>
+        <button class="btn-modal-ok" onclick="exportarExcel()"><i class="ti ti-download"></i> Exportar y guardar en SharePoint</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-cerrar">
+    <div class="modal-card" style="max-width:480px">
+      <div class="modal-titulo"><i class="ti ti-logout" style="color:var(--rojo)"></i> ¿Cerrar sesión?</div>
+      <div class="modal-body">Verifica los participantes con falta o justificado antes de confirmar. Los datos se sincronizan automáticamente con SharePoint.</div>
+      <div id="modal-cerrar-body" style="max-height:240px;overflow-y:auto;background:#f9f9f9;border:1px solid #e5e7eb;border-radius:var(--radius);padding:10px;margin-bottom:12px;font-size:12px"></div>
+      <div class="modal-btns">
+        <button class="btn-modal-cancel" onclick="cerrarModal('modal-cerrar')">Cancelar</button>
+        <button class="btn-modal-ok" onclick="cerrarSesion()"><i class="ti ti-logout"></i> Confirmar y cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMEOUT BANNER -->
+  <div class="timeout-banner" id="timeout-banner">
+    <span><i class="ti ti-clock"></i> Tu sesión cerrará en <strong id="timeout-countdown">5:00</strong> por inactividad</span>
+    <button class="btn-keep" onclick="keepSession()">Mantener sesión</button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ── DATOS ──────────────────────────────────────────────────
+const ADMINS_BASE = {
+  '40436677': { pass: '40436677', nombre: 'Yllescas C., Maria del Carmen', rol: '👑 Administrador principal', iniciales: 'MY', primer: true },
+  '46144746': { pass: '46144746', nombre: 'Sanchez Sandoval, Carlos Miguel', rol: 'Administrador', iniciales: 'CS', primer: true },
+  '72310909': { pass: '72310909', nombre: 'Moran Suarez, Marco Andrés', rol: 'Administrador', iniciales: 'MM', primer: true },
+  '74290396': { pass: '74290396', nombre: 'Cubas Collantes, Marycarmen', rol: 'Administrador', iniciales: 'MC', primer: true },
+  '76805513': { pass: '76805513', nombre: 'Solano Sanchez, Gresia Giuliana', rol: 'Administrador', iniciales: 'GS', primer: true },
+};
+
+// ── PERSISTENCIA localStorage (fallback) ──────────────────
+const LS_ADMINS  = 'ucj_admins';
+const LS_ASIST   = 'ucj_asist_c1';
+const LS_SP      = 'ucj_sp';
+
+function lsGuardarAdmins() {
+  try { localStorage.setItem(LS_ADMINS, JSON.stringify(ADMINS)); } catch(e) {}
+}
+function lsGuardarAsist() {
+  try {
+    const data = PARTICIPANTES.map(p => ({ d: p.d, s1: p.s1, s2: p.s2, s3: p.s3, s4: p.s4 }));
+    localStorage.setItem(LS_ASIST, JSON.stringify(data));
+  } catch(e) {}
+}
+function lsGuardarSP(ruta) {
+  try { localStorage.setItem(LS_SP, ruta); } catch(e) {}
+}
+function lsCargarSP() {
+  try { return localStorage.getItem(LS_SP) || ''; } catch(e) { return ''; }
+}
+
+// ── INTEGRACIÓN SHAREPOINT via POWER AUTOMATE ─────────────
+const SP_CURSO_ID = 'CLAUDE_BASICO_G1';
+const SP_URL_GUARDAR  = 'https://defaultfab504c883424cf89900c8901e187d.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a29658f01b9840db9921cc6f8fa97223/triggers/manual/paths/invoke?api-version=1';
+const SP_URL_CARGAR   = 'https://defaultfab504c883424cf89900c8901e187d.47.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/0cb2f21ce44b478e9ae336a8b1a8005a/triggers/manual/paths/invoke/cargar/{cursoID}?api-version=1';
+const SP_URL_AUDITORIA= 'https://defaultfab504c883424cf89900c8901e187d.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8092d5e4fac840d686d9f7b1117828aa/triggers/manual/paths/invoke?api-version=1';
+
+let spSyncActivo = true; // se desactiva si hay error de conexión
+
+// Guardar UN participante en SharePoint
+async function spGuardarParticipante(p) {
+  if (!spSyncActivo) return;
+  try {
+    const body = {
+      titulo: SP_CURSO_ID + '_' + p.d,
+      cursoID: SP_CURSO_ID,
+      dni: p.d,
+      apellidosNombres: p.n,
+      empresa: p.e,
+      cargo: p.c || '',
+      sesiones: JSON.stringify({ s1: p.s1, s2: p.s2, s3: p.s3, s4: p.s4 }),
+      ultimaActualizacion: new Date().toISOString(),
+      actualizadoPor: dniActual || 'sistema'
+    };
+    await fetch(SP_URL_GUARDAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body),
+      mode: 'no-cors'
+    });
+  } catch(e) {
+    console.warn('SP Guardar error:', e);
+    spSyncActivo = false;
+    mostrarAlertaSP('Sin conexión a SharePoint. Los datos se guardan localmente.');
+  }
+}
+
+// Guardar TODOS los participantes en SharePoint (en paralelo)
+async function spGuardarTodos() {
+  if (!spSyncActivo) return;
+  await Promise.all(PARTICIPANTES.map(p => spGuardarParticipante(p)));
+}
+
+// Cargar asistencia desde SharePoint y aplicar a PARTICIPANTES
+async function spCargarAsistencia() {
+  try {
+    const url = SP_URL_CARGAR.replace('{cursoID}', encodeURIComponent(SP_CURSO_ID));
+    const resp = await fetch(url, {
+      method: 'GET'
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const items = data.value || [];
+    if (items.length === 0) return false; // no hay datos en SP aún
+    items.forEach(item => {
+      const p = PARTICIPANTES.find(x => x.d === item.DNI);
+      if (p) {
+        try {
+          const ses = JSON.parse(item.Sesiones || '{}');
+          if (ses.s1 !== undefined) p.s1 = ses.s1;
+          if (ses.s2 !== undefined) p.s2 = ses.s2;
+          if (ses.s3 !== undefined) p.s3 = ses.s3;
+          if (ses.s4 !== undefined) p.s4 = ses.s4;
+        } catch(e) {}
+      }
+    });
+    console.log('SP: asistencia cargada (' + items.length + ' registros)');
+    return true;
+  } catch(e) {
+    console.warn('SP Cargar error:', e);
+    spSyncActivo = false;
+    return false;
+  }
+}
+
+// Registrar auditoría en SharePoint
+async function spRegistrarAuditoria(accion, sesion, motivo) {
+  try {
+    const now = new Date().toISOString();
+    await fetch(SP_URL_AUDITORIA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      mode: 'no-cors',
+      body: JSON.stringify({
+        titulo: now + '_' + dniActual,
+        cursoID: SP_CURSO_ID,
+        dni: dniActual,
+        accion: accion,
+        sesionAfectada: sesion || '',
+        motivo: motivo || '',
+        realizadoPor: dniActual,
+        fechaHora: now
+      })
+    });
+  } catch(e) {
+    console.warn('SP Auditoria error:', e);
+  }
+}
+
+// Mostrar alerta SP (una sola vez)
+let _alertaSPmostrada = false;
+function mostrarAlertaSP(msg) {
+  if (_alertaSPmostrada) return;
+  _alertaSPmostrada = true;
+  const div = document.createElement('div');
+  div.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#92400e;color:#fef3c7;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4)';
+  div.textContent = '⚠️ ' + msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 6000);
+}
+
+// Cargar ADMINS: mezclar base con datos guardados (contraseñas/primer cambiados)
+const ADMINS = JSON.parse(JSON.stringify(ADMINS_BASE)); // copia profunda
+try {
+  const saved = JSON.parse(localStorage.getItem(LS_ADMINS) || 'null');
+  if (saved) {
+    Object.keys(saved).forEach(dni => {
+      if (ADMINS[dni]) {
+        ADMINS[dni].pass   = saved[dni].pass   ?? ADMINS[dni].pass;
+        ADMINS[dni].primer = saved[dni].primer  ?? ADMINS[dni].primer;
+      }
+    });
+  }
+} catch(e) {}
+
+const FAC_DNI = '18168534';
+let dniActual = '';
+
+const CURSOS = [
+  { nom:'Claude Nivel Básico – Grupo 1', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:2, estado:'En curso', fecha:'Jun 2026', anio:'2026', mes:'Jun' },
+  { nom:'Introducción a la IA', meta:'Elek Romero · Barrio · Interno', part:30, ses:4, comp:4, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May' },
+  { nom:'Bizagi 2026', meta:'Rodrigo Rodriguez · Sinercorp & Elek Romero · Barrio', part:16, ses:3, comp:3, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May' },
+  { nom:'Formación de Facilitadores', meta:'Iosef Navarro V. · UPC · Externo', part:28, ses:3, comp:3, estado:'Completo', fecha:'Abr 2026', anio:'2026', mes:'Abr' },
+];
+
+const PARTICIPANTES = [
+  {n:'Acuña Godoy, Oscar Jimenes',c:'Analista de Ing. de Costos',e:'Samitex',d:'46650454',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Alva Reyes, Carlos Antonio',c:'Jefe de Producto',e:'Global Sourcing',d:'40456966',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Atoche Arévalo, Mildred Yannina',c:'Gerente de Logística',e:'Sinercorp',d:'25839471',s1:'a',s2:'f',s3:'a',s4:''},
+  {n:'Ayala Soria, Gustavo Yerak',c:'Planner de Logística',e:'Sinercorp',d:'10763108',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Bello Rosendo, Manuel Fernando',c:'Gerente General',e:'Samitex',d:'48990267',s1:'a',s2:'j',s3:'f',s4:''},
+  {n:'Borges Morales, Elisaul Enrique',c:'Jefe de Control de Gestión',e:'Sinercorp',d:'49102106',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Ccoyure Arce, Jonathan Alexander',c:'Analista',e:'Samitex',d:'76598306',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Condori Pauccar, Joel Eduardo',c:'Analista de Producto',e:'EL',d:'42483140',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Coral Navarro, Rocio Janet',c:'Asistente Administrativo',e:'Samitex',d:'07606896',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Correa Ruiz, Yessica',c:'Jefe de UDP',e:'Samitex',d:'40778207',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Davila Melgar, Luis Axcel',c:'Analista de Medios',e:'Barrio',d:'74299780',s1:'a',s2:'a',s3:'f',s4:''},
+  {n:'Del Aguila Diaz, Nataly Shirley',c:'Jefe de Mejora Continua',e:'Sinercorp',d:'41839656',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Fabian Leon, Luis Angel',c:'Analista de Ingeniería',e:'Samitex',d:'70068465',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Guerrero Manrique, Linda Sherry',c:'Analista Comercial',e:'Global Sourcing',d:'71261141',s1:'a',s2:'a',s3:'f',s4:''},
+  {n:'Lopez de la Cruz, Adamari Elisa',c:'Auxiliar de Ingeniería',e:'Samitex',d:'74586918',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Lucar Rojas, Ines Elita',c:'Administradora',e:'Samitex',d:'42911815',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Ludeña Ramirez, Edith Maribel',c:'Jefatura de Control de Calidad',e:'Samitex',d:'42213032',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Martinez Zegarra, Eugenia Stefany',c:'Comprador Textil',e:'Sinercorp',d:'47099315',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Mayta Canario, James Erick',c:'Analista de Ingeniería',e:'Samitex',d:'72741791',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Medina Romero, Luis Arturo',c:'Jefe de Producto',e:'EL',d:'72196458',s1:'f',s2:'a',s3:'f',s4:''},
+  {n:'Nieves Meza, Gonzalo',c:'Planner Jr',e:'Primatex',d:'73671736',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Nuñez Spelucin, Gian Franco',c:'Jefe de Medios',e:'Barrio',d:'74230133',s1:'a',s2:'a',s3:'f',s4:''},
+  {n:'Nuñonca Sebastian, Farina Ailed',c:'Asistente Comercial',e:'Texcorp',d:'71628138',s1:'a',s2:'a',s3:'f',s4:''},
+  {n:'Pelaez Gallegos, Crhistian Joel',c:'Coord. de Adm y Proyectos',e:'Lukers',d:'77167963',s1:'a',s2:'f',s3:'a',s4:''},
+  {n:'Quintana Olaya, Robert Francisco',c:'Jefe de Planeamiento y Control',e:'Samitex',d:'25792176',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Rodriguez Contreras, Jose Luis',c:'Gerente de Planta',e:'Samitex',d:'41851523',s1:'a',s2:'a',s3:'f',s4:''},
+  {n:'Rodriguez Rodriguez, Rukmini Kunti',c:'Analista de Ingeniería',e:'Samitex',d:'45581186',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Tong Chong, Luis Ken Chun',c:'Jefe de Planeamiento',e:'Lukers',d:'41863763',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Torres Laynes, Esdras Franklin',c:'Analista',e:'Sinercorp',d:'74940596',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Vasquez Castro, Fredy Omar',c:'Planner Comercial',e:'Primatex',d:'72857275',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Vivanco Rodriguez, Arturo Martin',c:'Asistente Administrativo',e:'EL',d:'10643070',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Wakida Aoki, Katya',c:'Compradora',e:'Lukers',d:'40005205',s1:'a',s2:'a',s3:'a',s4:''},
+];
+
+// Cargar asistencia: primero localStorage (inmediato), luego SharePoint sobreescribe
+try {
+  const savedAsist = JSON.parse(localStorage.getItem(LS_ASIST) || 'null');
+  if (savedAsist) {
+    savedAsist.forEach(saved => {
+      const p = PARTICIPANTES.find(x => x.d === saved.d);
+      if (p) { p.s1 = saved.s1 ?? p.s1; p.s2 = saved.s2 ?? p.s2; p.s3 = saved.s3 ?? p.s3; p.s4 = saved.s4 ?? p.s4; }
+    });
+  }
+} catch(e) {}
+
+// Carga asíncrona desde SharePoint (se ejecuta al iniciar la app)
+async function iniciarCargaSP() {
+  const cargado = await spCargarAsistencia();
+  if (cargado) {
+    lsGuardarAsist(); // sincronizar localStorage con datos SP
+    if (typeof renderTablaFac === 'function') renderTablaFac();
+    if (typeof renderRegistro === 'function') renderRegistro();
+  }
+}
+
+// ── DATOS CURSOS COMPLETADOS ──────────────────────────────
+const PART_INTROIA = [
+  {n:'Brenda Maria Teran Ulloa',c:'',e:'Sinercorp',d:'72846633',s1:'a',s2:'f',s3:'a',s4:'a'},
+  {n:'Fabiola Casas Salcedo',c:'',e:'Sinercorp',d:'47129153',s1:'a',s2:'f',s3:'f',s4:'f'},
+  {n:'Karla Mercedes Requejo Querevalu',c:'',e:'Sinercorp',d:'76535235',s1:'a',s2:'f',s3:'a',s4:'a'},
+  {n:'Nataly Del Aguila Díaz',c:'Jefe de Mejora Continua',e:'Sinercorp',d:'41839656',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Miriam Castro Celio',c:'',e:'Texcorp',d:'41642194',s1:'a',s2:'f',s3:'a',s4:'f'},
+  {n:'Paulo Cesar Alva Peramas',c:'',e:'Samitex',d:'43501230',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Rocio Janet Coral Navarro',c:'Asistente Administrativo',e:'Samitex',d:'07606896',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Alexandra Doris Zevallos Hidalgo',c:'',e:'Panorama',d:'46118546',s1:'a',s2:'a',s3:'a',s4:'f'},
+  {n:'Lilybel Dilaura Quinto Farfan',c:'',e:'Panorama',d:'43078893',s1:'a',s2:'a',s3:'a',s4:'f'},
+  {n:'Milagros Cabanillas Hoyos',c:'',e:'Panorama',d:'74156381',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Alberto Giancarlo Cornejo Ayala',c:'',e:'Tándem',d:'46663527',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Alvaro Villegas Terrones',c:'',e:'Tándem',d:'44437716',s1:'a',s2:'a',s3:'a',s4:'f'},
+  {n:'Arlette Kerilly Varela Marin',c:'',e:'Tándem',d:'40212117',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Beatriz Estrella Apaza Pacotaype',c:'',e:'Tándem',d:'75932502',s1:'a',s2:'a',s3:'a',s4:'f'},
+  {n:'Jose Díaz Collantes',c:'',e:'Tándem',d:'40024876',s1:'f',s2:'a',s3:'a',s4:'a'},
+  {n:'Julissa Garro Cano',c:'',e:'Tándem',d:'10193672',s1:'a',s2:'f',s3:'f',s4:'f'},
+  {n:'Karen Alejandra De La Cruz Cano',c:'',e:'Tándem',d:'44268389',s1:'a',s2:'a',s3:'a',s4:'f'},
+  {n:'Lili Fiorela Bazan Cubas',c:'',e:'Tándem',d:'73197901',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Lizbeth Paula Guerrero Mamani',c:'',e:'Tándem',d:'77245796',s1:'f',s2:'a',s3:'a',s4:'f'},
+  {n:'Marisa Elizabeth Lopez Risco',c:'',e:'Tándem',d:'07806316',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Martin Palacios Ceron',c:'',e:'Tándem',d:'47558393',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Peter Espinoza Gomez',c:'',e:'Tándem',d:'73034966',s1:'a',s2:'f',s3:'a',s4:'f'},
+  {n:'Ricardo Policarpo Rojas',c:'',e:'Tándem',d:'72423617',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Rocio Chavez Collantes',c:'',e:'Tándem',d:'71714286',s1:'a',s2:'f',s3:'a',s4:'a'},
+  {n:'Omar Enrique Wilson Taype',c:'',e:'Tándem',d:'72900652',s1:'a',s2:'f',s3:'a',s4:'a'},
+  {n:'Arturo Vivanco Rodriguez',c:'Asistente Administrativo',e:'EL',d:'10643070',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Jorge Eduardo Icochea Duffoo',c:'',e:'Llave en Mano',d:'70366012',s1:'f',s2:'a',s3:'f',s4:'f'},
+  {n:'Claudia Soledad Velez Nieves',c:'',e:'Llave en Mano',d:'41679487',s1:'a',s2:'a',s3:'a',s4:'a'},
+  {n:'Jhiermy Anthony Perez Ordoñez',c:'',e:'Llave en Mano',d:'45988720',s1:'a',s2:'a',s3:'f',s4:'a'},
+  {n:'Crhistian Pelaez Gallegos',c:'Coord. de Adm y Proyectos',e:'Lukers',d:'77167963',s1:'a',s2:'f',s3:'a',s4:'a'},
+];
+const PART_BIZAGI = [
+  {n:'Policarpo Rojas, Ricardo Manuel',c:'Analista de Créditos y Cobranzas',e:'Tándem',d:'72423617',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Wilson Taipe, Omar Enrique',c:'Asistente - Ecommerce',e:'Tándem',d:'72900652',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Vega Martinez, Angelica',c:'Analista Funcional TIC 2',e:'Tándem',d:'47898299',s1:'f',s2:'a',s3:'a',s4:''},
+  {n:'Razuri Cairo, Eduardo Andre',c:'Asistente TIC',e:'Tándem',d:'72963327',s1:'f',s2:'a',s3:'a',s4:''},
+  {n:'Palacios Ceron, Martin',c:'Asistente Adm. Personal',e:'Tándem',d:'47558393',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Velasquez Garay, Alonso Rodrigo',c:'Asistente de Finanzas',e:'Tándem',d:'77573659',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Chavez Collantes, Rocio Elizabeth',c:'Analista Adm. Personal',e:'Tándem',d:'71714286',s1:'a',s2:'a',s3:'f',s4:''},
+  {n:'Coral Navarro, Rocio Janet',c:'Asistente Administrativo',e:'Samitex',d:'07606896',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Garro Cano, Julissa Cristina',c:'Jefe de Créditos y Cobranzas',e:'Tándem',d:'10193672',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Guerrero Mamani, Lizbeth Paula',c:'Practicante Créditos',e:'Tándem',d:'77245796',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Villegas Terrones, Alvaro Armando',c:'Analista Adm. Personal',e:'Tándem',d:'44437716',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Quispe Veliz, Yassmin Lucero',c:'Asistente Contable',e:'Tándem',d:'76131689',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Yucra Granada, Suebelin Tatiana',c:'Contador',e:'Tándem',d:'72890266',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Diaz Collantes, Jose',c:'Coordinador de Compras',e:'Tándem',d:'40024876',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Rios Yauri, Gabriela Camila',c:'Coordinadora de Proyectos',e:'Llave en Mano',d:'75170851',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Cuadros Garay, Susan',c:'Analista',e:'Tándem',d:'41798807',s1:'a',s2:'a',s3:'a',s4:''},
+];
+const PART_FAC = [
+  {n:'Jhiermy Anthony Perez Ordoñez',c:'',e:'Llave en Mano',d:'45988720',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Arturo Rodolfo Costa Torres',c:'',e:'Llave en Mano',d:'46210306',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Claudia Soledad Velez Nieves',c:'',e:'Llave en Mano',d:'41679487',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Ivette Fanny Quispe Roca',c:'',e:'Lukers',d:'44157135',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Maritza Vasquez Vela',c:'',e:'Lukers',d:'00106260',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Carla Cristina Sanchez Guinoza',c:'',e:'Lukers',d:'42555967',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Martin Manuel Indacochea Palacios',c:'',e:'Lukers',d:'72208256',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Crhistian Pelaez Gallegos',c:'',e:'Lukers',d:'77167963',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Jesus Bernardo Sanchez Capistrano',c:'',e:'Panorama',d:'40443457',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Walter Morales Lanao',c:'',e:'Panorama',d:'10005711',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Alexandra Doris Zevallos Hidalgo',c:'',e:'Panorama',d:'46118546',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Brener Angel Torres Muñoz',c:'',e:'Panorama',d:'40846286',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Erick Willianstong Fernandez Soto',c:'',e:'Panorama',d:'41731461',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Marco Antonio Guillen Hernandez',c:'',e:'Panorama',d:'08548631',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Carlos Enrique Rodriguez Teran',c:'',e:'Samitex',d:'72729506',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Esdras Franklin Torres Laynes',c:'',e:'Sinercorp',d:'74940596',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Edson Arturo Elliot Quiñones',c:'',e:'Sinercorp',d:'45432473',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Mildred Yannina Atoche Arevalo',c:'',e:'Sinercorp',d:'25839471',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Rodrigo Franco Gonzales Rios',c:'',e:'Sinercorp',d:'71243166',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'César Sebastian Asmat Rabanal',c:'',e:'Tándem',d:'18168534',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Carlos Miguel Sanchez Sandoval',c:'',e:'Tándem',d:'46144746',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Giovanni Renato Herrera Castilla',c:'',e:'Tándem',d:'76041796',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Oscar Kevin Estela Rodriguez',c:'',e:'Tándem',d:'71960059',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Alina Jeniffer Gamarra Tomas',c:'',e:'Tándem',d:'47700534',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Maria del Carmen Yllescas Cardenas',c:'',e:'Tándem',d:'40436677',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Marycarmen Cubas Collantes',c:'',e:'Tándem',d:'74290396',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Miriam Castro Celio',c:'',e:'Texcorp',d:'41642194',s1:'a',s2:'a',s3:'a',s4:''},
+  {n:'Freddy Elek Romero Silva',c:'',e:'Barrio',d:'43885816',s1:'a',s2:'a',s3:'a',s4:''},
+];
+
+// Config de sesiones por curso (solo lectura para cursos completados)
+const CURSO_CONFIG = {
+  0: { // Claude Básico G1
+    part: PARTICIPANTES,
+    fechas: ['03/06','05/06','10/06','12/06'],
+    totalSes: 4,
+    editable: true,
+  },
+  1: { // Intro IA
+    part: PART_INTROIA,
+    fechas: ['18/05','25/05','27/05','01/06'],
+    totalSes: 4,
+    editable: false,
+  },
+  2: { // Bizagi
+    part: PART_BIZAGI,
+    fechas: ['04/05','07/05','11/05'],
+    totalSes: 3,
+    editable: false,
+  },
+  3: { // Facilitadores
+    part: PART_FAC,
+    fechas: ['06/04','09/04','13/04'],
+    totalSes: 3,
+    editable: false,
+  },
+};
+let cursoActivoIdx = 0; // índice del curso actualmente en vista detalle
+
+// ── HELPERS ──────────────────────────────────────────────
+function ir(id) {
+  document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+  document.getElementById(id).classList.add('activa');
+  // Autofocus en campos DNI de login
+  if (id === 'v-login-fac') setTimeout(() => { const el = document.getElementById('fac-dni'); if (el) { el.value = ''; el.focus(); } }, 80);
+  if (id === 'v-login-adm') setTimeout(() => { const el = document.getElementById('adm-dni'); if (el) { el.value = ''; el.focus(); } }, 80);
+}
+function irInicio() {
+  document.getElementById('top-badge').style.display = 'none';
+  document.getElementById('top-user').style.display = 'none';
+  document.getElementById('btn-cerrar-top').style.display = 'none';
+  ir('v-inicio');
+}
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+function abrirModalExport() { document.getElementById('modal-export').classList.add('open'); }
+
+// ── RENDER DASHBOARD (stats dinámicos) ──────────────────
+function renderDashboard() {
+  const part = getPartActivos();
+  const total = part.length;
+  const t1 = part.filter(p=>p.s1==='a'||p.s1==='j').length;
+  const t2 = part.filter(p=>p.s2==='a'||p.s2==='j').length;
+  const realizadas = sesionesRealizadas();
+  const bajo = part.filter(p => {
+    const vals = ['s1','s2','s3','s4'].slice(0,realizadas);
+    const ok = vals.filter(k=>p[k]==='a'||p[k]==='j').length;
+    return Math.round(ok/realizadas*100) < 75;
+  }).length;
+
+  const pct1 = Math.round(t1/total*100);
+  const pct2 = Math.round(t2/total*100);
+
+  // Admin dashboard
+  const ds1 = document.getElementById('dash-s1');
+  const ds2 = document.getElementById('dash-s2');
+  const db  = document.getElementById('dash-bajo');
+  if (ds1) ds1.textContent = t1;
+  if (ds2) ds2.textContent = t2;
+  if (db)  db.textContent  = bajo;
+
+  const pb1 = document.getElementById('ses-pb1');
+  const pb2 = document.getElementById('ses-pb2');
+  const sc1 = document.getElementById('ses-count1');
+  const sc2 = document.getElementById('ses-count2');
+  if (pb1) pb1.style.width = pct1 + '%';
+  if (pb2) pb2.style.width = pct2 + '%';
+  if (sc1) sc1.textContent = t1 + '/' + total + ' · ' + pct1 + '%';
+  if (sc2) sc2.textContent = t2 + '/' + total + ' · ' + pct2 + '%';
+
+  // Facilitador dashboard — % Asist. Prom. a la fecha (incluye sesión activa)
+  const fsPct = document.getElementById('fs-pct-asist');
+  if (fsPct) {
+    const sesActiva = getSesionActivaIdx();
+    const totalSesiones = sesActiva >= 0 ? sesActiva + 1 : sesionesRealizadas();
+    if (totalSesiones > 0) {
+      const keys = ['s1','s2','s3','s4'].slice(0, totalSesiones);
+      const totalMarcas = part.length * totalSesiones;
+      const totalAsist = part.reduce((acc, p) => acc + keys.filter(k => p[k]==='a'||p[k]==='j').length, 0);
+      const pctGlobal = Math.round(totalAsist / totalMarcas * 100);
+      fsPct.textContent = pctGlobal + '%';
+      fsPct.style.color = pctGlobal >= 75 ? '#4ade80' : pctGlobal >= 50 ? '#f59e0b' : '#f87171';
+    } else {
+      fsPct.textContent = '–';
+    }
+  }
+
+  // Sesiones pendientes = sesiones con fecha futura
+  const facPend = document.getElementById('fac-pend');
+  if (facPend) {
+    const cfg2 = getSesConfig();
+    const now2 = new Date();
+    const utc2 = now2.getTime() + now2.getTimezoneOffset() * 60000;
+    const lima2 = new Date(utc2 + (-5 * 60) * 60000);
+    const hoyMs2 = new Date(lima2.getFullYear(), lima2.getMonth(), lima2.getDate()).getTime();
+    let pend = 0;
+    if (cfg2 && cfg2.fechas) {
+      cfg2.fechas.forEach(f => {
+        const [dd, mm] = f.split('/').map(Number);
+        const fMs = new Date(lima2.getFullYear(), mm-1, dd).getTime();
+        if (fMs > hoyMs2) pend++;
+      });
+    }
+    facPend.textContent = pend;
+  }
+
+  // Actualizar texto footer
+  const bajotxt = document.getElementById('bajo-txt');
+  if (bajotxt) {
+    const sesActiva2 = getSesionActivaIdx();
+    const realizadasHastaAyer2 = sesActiva2 >= 0 ? sesActiva2 : sesionesRealizadas();
+    if (realizadasHastaAyer2 > 0) {
+      const keys2 = ['s1','s2','s3','s4'].slice(0, realizadasHastaAyer2);
+      const totalMarcas2 = part.length * realizadasHastaAyer2;
+      const totalAsist2 = part.reduce((acc, p) => acc + keys2.filter(k => p[k]==='a'||p[k]==='j').length, 0);
+      const pctGlobal2 = Math.round(totalAsist2 / totalMarcas2 * 100);
+      bajotxt.textContent = `Asistencia a la fecha: ${pctGlobal2}%`;
+    } else {
+      bajotxt.textContent = 'Sin sesiones registradas';
+    }
+  }
+  const fp1 = document.getElementById('fac-pb1');
+  const fp2 = document.getElementById('fac-pb2');
+  const fc1 = document.getElementById('fac-count1');
+  const fc2 = document.getElementById('fac-count2');
+  if (fp1) fp1.style.width = pct1 + '%';
+  if (fp2) fp2.style.width = pct2 + '%';
+  if (fc1) fc1.textContent = t1 + '/' + total + ' · ' + pct1 + '%';
+  if (fc2) fc2.textContent = t2 + '/' + total + ' · ' + pct2 + '%';
+}
+
+function exportarExcel() {
+  cerrarModal('modal-export');
+  const cfg = getSesConfig();
+  const sesActiva = getSesionActivaIdx();
+  // Exportar hasta la sesión activa inclusive (no solo las "realizadas" por fecha)
+  const realizadas = sesActiva >= 0 ? sesActiva + 1 : sesionesRealizadas();
+  const fechasSes = cfg && cfg.fechas ? cfg.fechas.map(f => {
+    const [dd, mm] = f.split('/');
+    return `${dd}/${mm}/2026`;
+  }) : ['03/06/2026','05/06/2026','10/06/2026','12/06/2026'];
+  const keySes = ['s1','s2','s3','s4'];
+
+  // Encabezados
+  const headers = ['#','Apellidos y Nombres','Cargo','Empresa','DNI'];
+  for (let i = 0; i < realizadas; i++) {
+    headers.push('Ses. ' + (i+1) + ' (' + fechasSes[i] + ')');
+  }
+  headers.push('Asistencias','% Participación','Estado');
+
+  // Filas de datos — usa PARTICIPANTES en memoria (con cambios del facilitador)
+  const rows = PARTICIPANTES.map((p, idx) => {
+    const vals = keySes.slice(0, realizadas).map(k => {
+      const v = p[k];
+      return v==='a' ? 'Asistió' : v==='f' ? 'Faltó' : v==='j' ? 'Justificado' : 'Faltó';
+    });
+    const ok = keySes.slice(0, realizadas).filter(k => p[k]==='a'||p[k]==='j').length;
+    const pct = Math.round(ok / realizadas * 100);
+    const estado = pct >= 75 ? 'Aprobado' : 'En riesgo';
+    return [idx+1, p.n, p.c, p.e, p.d, ...vals, ok + '/' + realizadas, pct + '%', estado];
+  });
+
+  // Fila de totales con %
+  const totRow = ['','TOTAL POR SESIÓN','','',''];
+  for (let i = 0; i < realizadas; i++) {
+    const k = keySes[i];
+    const t = PARTICIPANTES.filter(p => p[k]==='a'||p[k]==='j').length;
+    const pctT = Math.round(t / PARTICIPANTES.length * 100);
+    totRow.push(t + '/' + PARTICIPANTES.length + ' · ' + pctT + '%');
+  }
+  totRow.push('','','');
+  rows.push(totRow);
+
+  // Construir hoja
+  const wsData = [headers, ...rows];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  ws['!cols'] = [
+    {wch:4},{wch:32},{wch:28},{wch:14},{wch:12},
+    ...Array(realizadas).fill({wch:18}),
+    {wch:12},{wch:16},{wch:12}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Asistencia');
+
+  const hoy = new Date();
+  const dd = String(hoy.getDate()).padStart(2,'0');
+  const mm = String(hoy.getMonth()+1).padStart(2,'0');
+  const yyyy = hoy.getFullYear();
+  XLSX.writeFile(wb, 'UCJ_ClaudeBasico_Asistencia_' + dd + mm + yyyy + '.xlsx');
+  autoguardar();
+}
+function confirmarCerrar() {
+  // 6. Convertir vacíos → F en la sesión activa
+  const key = getSesionActivaKey();
+  if (key) {
+    PARTICIPANTES.forEach(p => { if (p[key] === '' || p[key] === undefined) p[key] = 'f'; });
+    autoguardar();
+    renderTablaFac();
+  }
+
+  // 7. Construir lista de F y J para advertencia
+  const faltaron = key ? PARTICIPANTES.filter(p => p[key] === 'f') : [];
+  const justificados = key ? PARTICIPANTES.filter(p => p[key] === 'j') : [];
+
+  const modalBody = document.getElementById('modal-cerrar-body');
+  if (modalBody) {
+    let html = '<div style="font-size:12px;color:#555;margin-bottom:8px">Revisa antes de cerrar:</div>';
+    if (faltaron.length) {
+      html += `<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#c62828;margin-bottom:4px">✗ Faltaron (${faltaron.length})</div>`;
+      html += faltaron.map(p => `<div style="font-size:11px;color:#333;padding:2px 0;border-bottom:1px solid #f0f0f0">${p.n} · <span style="color:#888">${p.e}</span></div>`).join('');
+      html += '</div>';
+    }
+    if (justificados.length) {
+      html += `<div><div style="font-size:11px;font-weight:600;color:#b45309;margin-bottom:4px">J Justificados (${justificados.length})</div>`;
+      html += justificados.map(p => `<div style="font-size:11px;color:#333;padding:2px 0;border-bottom:1px solid #f0f0f0">${p.n} · <span style="color:#888">${p.e}</span></div>`).join('');
+      html += '</div>';
+    }
+    if (!faltaron.length && !justificados.length) {
+      html = '<div style="font-size:12px;color:#10b981">✓ Todos los participantes tienen asistencia registrada.</div>';
+    }
+    modalBody.innerHTML = html;
+  }
+  document.getElementById('modal-cerrar').classList.add('open');
+}
+function cerrarSesion() {
+  cerrarModal('modal-cerrar');
+  clearTimeout(inactivityTimer);
+  clearTimeout(countdownTimer);
+  document.getElementById('timeout-banner').classList.remove('show');
+  dniActual = '';
+  irInicio();
+}
+
+// ── RELOJ ──────────────────────────────────────────────────
+function actualizarFecha() {
+  const ahora = new Date();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const dia = dias[ahora.getDay()];
+  const d = String(ahora.getDate()).padStart(2,'0');
+  const m = meses[ahora.getMonth()];
+  const y = ahora.getFullYear();
+  const h = String(ahora.getHours()).padStart(2,'0');
+  const min = String(ahora.getMinutes()).padStart(2,'0');
+  const ampm = ahora.getHours() >= 12 ? 'pm' : 'am';
+  const h12 = ahora.getHours() % 12 || 12;
+  document.getElementById('top-fecha').innerHTML = `<i class="ti ti-clock"></i> ${dia} ${d}/${String(ahora.getMonth()+1).padStart(2,'0')}/${y} · ${String(h12).padStart(2,'0')}:${min} ${ampm} (Lima)`;
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+cargarTema();
+renderTarjetasSesiones();
+
+// Actualizar badge dinámica en pantalla login facilitador
+(function actualizarBadgeFac() {
+  const badge = document.getElementById('fac-login-badge');
+  if (!badge) return;
+  const cfg = getSesConfig();
+  if (!cfg || !cfg.fechas) return;
+  const sesActiva = getSesionActivaIdx();
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+  const hoyMs = new Date(lima.getFullYear(), lima.getMonth(), lima.getDate()).getTime();
+  if (sesActiva >= 0) {
+    badge.textContent = `Sesión ${sesActiva+1} de ${cfg.totalSes} · Hoy`;
+    badge.style.background = '#10b981';
+  } else {
+    // Buscar próxima sesión futura
+    for (let i = 0; i < cfg.fechas.length; i++) {
+      const [dd, mm] = cfg.fechas[i].split('/').map(Number);
+      const fMs = new Date(lima.getFullYear(), mm-1, dd).getTime();
+      const diff = Math.round((fMs - hoyMs) / 86400000);
+      if (diff > 0) {
+        const label = diff === 1 ? 'Mañana' : `En ${diff} días`;
+        badge.textContent = `Sesión ${i+1} de ${cfg.totalSes} · ${label}`;
+        return;
+      }
+    }
+    badge.textContent = 'Curso completado';
+  }
+})();
+
+// ── LOGIN ADMIN ──────────────────────────────────────────
+function loginAdmin() {
+  const dni = document.getElementById('adm-dni').value.trim();
+  const pass = document.getElementById('adm-pass').value;
+  const err = document.getElementById('adm-err');
+  if (ADMINS[dni] && pass === ADMINS[dni].pass) {
+    err.style.display = 'none';
+    dniActual = dni;
+    const adm = ADMINS[dni];
+    if (adm.primer) { ir('v-cambio-inicial'); return; }
+    abrirAdmin(dni);
+  } else {
+    err.style.display = 'block';
+  }
+}
+
+function cambiarPassInicial() {
+  const nueva = document.getElementById('nueva-pass').value;
+  const conf = document.getElementById('conf-pass').value;
+  const err = document.getElementById('cambio-err');
+  if (nueva.length < 8 || nueva === dniActual || nueva !== conf) {
+    err.style.display = 'block'; return;
+  }
+  err.style.display = 'none';
+  ADMINS[dniActual].pass = nueva;
+  ADMINS[dniActual].primer = false;
+  lsGuardarAdmins(); // ← persistir cambio de contraseña
+  abrirAdmin(dniActual);
+}
+
+function abrirAdmin(dni) {
+  const adm = ADMINS[dni];
+  document.getElementById('top-badge').textContent = 'Administrador';
+  document.getElementById('top-badge').className = 'top-badge badge-adm';
+  document.getElementById('top-badge').style.display = 'inline-block';
+  document.getElementById('top-user').style.display = 'flex';
+  document.getElementById('top-user-txt').textContent = adm.nombre;
+  document.getElementById('btn-cerrar-top').style.display = 'flex';
+  document.getElementById('sb-avatar').textContent = adm.iniciales;
+  document.getElementById('sb-nombre').textContent = adm.nombre;
+  document.getElementById('sb-rol').textContent = adm.rol;
+  renderCursos();
+  ir('v-admin');
+  showPanel('dashboard');
+  iniciarInactividad();
+}
+
+// ── PANEL ADMIN ──────────────────────────────────────────
+function showPanel(p) {
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('activo'));
+  document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('activo'));
+  document.getElementById('panel-' + p).classList.add('activo');
+  const nav = document.getElementById('nav-' + p);
+  if (nav) nav.classList.add('activo');
+}
+
+function renderCursos(filtro='', anio='2026', mes='') {
+  const lista = document.getElementById('cursos-lista');
+  lista.innerHTML = '';
+  CURSOS.forEach(c => {
+    if (filtro && !c.nom.toLowerCase().includes(filtro.toLowerCase())) return;
+    if (anio && c.anio !== anio) return;
+    if (mes && c.mes !== mes) return;
+    const pct = Math.round((c.comp / c.ses) * 100);
+    const badge = c.estado === 'En curso'
+      ? `<span class="badge-ac2">En curso</span>`
+      : `<span class="badge-ok2">Completo</span>`;
+    const card = document.createElement('div');
+    card.className = 'curso-card';
+    card.innerHTML = `
+      <div class="curso-card-row">
+        <div class="curso-card-left">
+          <div class="curso-card-nom">${c.nom}</div>
+          <div class="curso-card-meta">${c.meta} · ${c.part} part. · ${c.ses} ses.</div>
+        </div>
+        <div class="curso-card-right">
+          ${badge}
+          <span class="curso-fecha"><i class="ti ti-calendar"></i> ${c.fecha}</span>
+        </div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <span class="prog-txt">${c.comp}/${c.ses} sesiones · ${pct}%</span>
+      </div>`;
+    card.addEventListener('click', ((_idx) => () => abrirDetalleCurso(_idx))(CURSOS.indexOf(c)));
+    lista.appendChild(card);
+  });
+}
+
+function abrirDetalleCurso(idx) {
+  cursoActivoIdx = idx;
+  const cfg = CURSO_CONFIG[idx];
+  // Actualizar encabezado del panel detalle
+  const c = CURSOS[idx];
+  const tituloEl = document.getElementById('detalle-titulo');
+  const metaEl   = document.getElementById('detalle-meta');
+  if (tituloEl) tituloEl.textContent = c.nom;
+  if (metaEl)   metaEl.textContent   = c.meta + ' · ' + cfg.part.length + ' participantes · ' + c.ses + ' ses. · ' + (c.ses * 2) + ' hrs';
+  showPanel('detalle');
+  renderTablaAdmin();
+  renderDashboard();
+}
+
+function getPartActivos() {
+  return CURSO_CONFIG[cursoActivoIdx]?.part || PARTICIPANTES;
+}
+
+function getSesConfig() {
+  return CURSO_CONFIG[cursoActivoIdx] || CURSO_CONFIG[0];
+}
+
+function filtrarCursos() {
+  renderCursos(
+    document.getElementById('filtro-cursos').value,
+    document.getElementById('filtro-anio').value,
+    document.getElementById('filtro-mes').value
+  );
+}
+
+// ── SESIÓN ACTIVA (detectada por fecha Lima, Perú) ───────
+function getFechaHoyLima() {
+  // Hora actual en zona Lima (UTC-5)
+  const now = new Date();
+  const limaOffset = -5 * 60; // minutos
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + limaOffset * 60000);
+  const dd = String(lima.getDate()).padStart(2,'0');
+  const mm = String(lima.getMonth()+1).padStart(2,'0');
+  return `${dd}/${mm}`; // formato DD/MM
+}
+
+function getSesionActivaIdx() {
+  // Retorna el índice (0-based) de la sesión activa hoy, o -1 si no hay
+  const cfg = getSesConfig();
+  if (!cfg || !cfg.fechas) return -1;
+  const hoy = getFechaHoyLima();
+  const idxHoy = cfg.fechas.findIndex(f => f === hoy);
+  if (idxHoy >= 0) return idxHoy;
+  // MODO PRUEBA: si no hay sesión hoy, activar la última sesión no completada
+  // (sesión cuya fecha es la más próxima al futuro o la última pasada)
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+  const hoyMs = new Date(lima.getFullYear(), lima.getMonth(), lima.getDate()).getTime();
+  let idxPrueba = -1;
+  for (let i = 0; i < cfg.fechas.length; i++) {
+    const [dd, mm] = cfg.fechas[i].split('/').map(Number);
+    const fMs = new Date(lima.getFullYear(), mm-1, dd).getTime();
+    if (fMs >= hoyMs) { idxPrueba = i; break; }
+  }
+  if (idxPrueba < 0) idxPrueba = cfg.fechas.length - 1;
+  return idxPrueba;
+}
+
+function getSesionActivaKey() {
+  const idx = getSesionActivaIdx();
+  if (idx < 0) return null;
+  return ['s1','s2','s3','s4'][idx];
+}
+
+function getInfoProximaSesion() {
+  const cfg = getSesConfig();
+  if (!cfg || !cfg.fechas) return '';
+  const hoyLima = getFechaHoyLima();
+  const diasSem = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const mesesNom = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  // Buscar sesión activa hoy
+  const idxHoy = cfg.fechas.findIndex(f => f === hoyLima);
+  if (idxHoy >= 0) {
+    return `<span style="color:#10b981;font-weight:600">● Sesión ${idxHoy+1} activa hoy ${hoyLima}</span> · Las sesiones anteriores están cerradas.`;
+  }
+
+  // Buscar próxima sesión futura
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+
+  for (let i = 0; i < cfg.fechas.length; i++) {
+    const [dd, mm] = cfg.fechas[i].split('/').map(Number);
+    const sesFecha = new Date(lima.getFullYear(), mm-1, dd);
+    if (sesFecha > lima) {
+      const diff = Math.round((sesFecha - new Date(lima.getFullYear(), lima.getMonth(), lima.getDate())) / 86400000);
+      const label = diff === 1 ? 'mañana' : diff === 0 ? 'hoy' : `el ${cfg.fechas[i]}`;
+      const diaNom = diasSem[sesFecha.getDay()];
+      return `Próxima sesión: <span class="hl">${label} ${diaNom} ${cfg.fechas[i]} a las 5:30 pm</span> · Las sesiones futuras están bloqueadas.`;
+    }
+  }
+  return 'Todas las sesiones han sido completadas.';
+}
+
+function renderTarjetasSesiones() {
+  const cfg = getSesConfig();
+  if (!cfg || !cfg.fechas) return;
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+  const hoyMs = new Date(lima.getFullYear(), lima.getMonth(), lima.getDate()).getTime();
+  const diasSem = ['Dom','Lun','Mar','Miérc','Jue','Vier','Sáb'];
+  const part = getPartActivos();
+  const total = part.length;
+  const keySes = ['s1','s2','s3','s4'];
+
+  // Generar HTML dinámico del dashboard
+  const prog = document.getElementById('ses-prog-fac');
+  if (prog) {
+    prog.innerHTML = cfg.fechas.map((f, i) => `
+      <div class="ses-col" id="fac-ses-col-${i}">
+        <div class="ses-col-head"><span class="ses-fecha" id="fac-ses-fecha-${i}">–</span><span id="fac-ses-badge-${i}" class="badge-pend">–</span></div>
+        <div class="ses-pb"><div id="fac-pb${i+1}" class="ses-pf" style="width:0%"></div></div>
+        <div class="ses-count" id="fac-count${i+1}">–</div>
+      </div>`).join('');
+  }
+
+  cfg.fechas.forEach((f, i) => {
+    const [dd, mm] = f.split('/').map(Number);
+    const fMs = new Date(lima.getFullYear(), mm-1, dd).getTime();
+    const diff = Math.round((fMs - hoyMs) / 86400000);
+    const diaSem = diasSem[new Date(lima.getFullYear(), mm-1, dd).getDay()];
+    const key = keySes[i];
+
+    const elFecha = document.getElementById(`fac-ses-fecha-${i}`);
+    const elBadge = document.getElementById(`fac-ses-badge-${i}`);
+    const elCol = document.getElementById(`fac-ses-col-${i}`);
+    const elCount = document.getElementById(`fac-count${i+1}`);
+    const elPb = document.getElementById(`fac-pb${i+1}`);
+
+    if (!elFecha) return;
+    elFecha.textContent = `${diaSem} ${f}`;
+
+    const asist = key ? part.filter(p => p[key]==='a'||p[key]==='j').length : 0;
+    const pct = total > 0 ? Math.round(asist/total*100) : 0;
+
+    if (diff < 0) {
+      const tieneData = part.some(p => p[key] === 'a' || p[key] === 'f' || p[key] === 'j');
+      elBadge.textContent = tieneData ? 'Completa' : 'Sin datos';
+      elBadge.className = tieneData ? 'badge-comp' : 'badge-pend';
+      elBadge.style.background = tieneData ? '' : '#6b7280';
+      if (elCol) elCol.style.opacity = '1';
+      if (elCount) elCount.textContent = `${asist}/${total} · ${pct}%`;
+      if (elPb) { elPb.style.width = pct+'%'; elPb.style.background = 'var(--rojo-osc)'; }
+    } else if (diff === 0) {
+      elBadge.textContent = 'Hoy · 5:30 pm';
+      elBadge.className = 'badge-comp';
+      elBadge.style.background = '#10b981';
+      if (elCol) elCol.style.opacity = '1';
+      if (elCount) elCount.textContent = `${asist}/${total} · ${pct}%`;
+      if (elPb) { elPb.style.width = pct+'%'; elPb.style.background = '#10b981'; }
+    } else if (diff === 1) {
+      elBadge.textContent = 'Mañana · 5:30 pm';
+      elBadge.className = 'badge-pend';
+      elBadge.style.background = '';
+      if (elCol) elCol.style.opacity = '0.5';
+      if (elCount) elCount.textContent = 'Pendiente';
+    } else {
+      elBadge.textContent = `En ${diff} días`;
+      elBadge.className = 'badge-pend';
+      elBadge.style.background = '';
+      if (elCol) elCol.style.opacity = '0.3';
+      if (elCount) elCount.textContent = 'Pendiente';
+    }
+  });
+}
+
+function actualizarInfoSesion() {
+  const info = getInfoProximaSesion();
+  const elAdmin = document.getElementById('info-proxima-ses-admin');
+  const elFac = document.getElementById('info-proxima-ses-fac');
+  if (elAdmin) elAdmin.innerHTML = info;
+  if (elFac) elFac.innerHTML = info;
+}
+
+// Sesiones realizadas = sesiones cuya fecha ya pasó o es hoy
+function sesionesRealizadas() {
+  const cfg = getSesConfig();
+  if (!cfg) return 1;
+  if (!cfg.editable) return cfg.totalSes;
+
+  // Para curso activo: contar sesiones cuya fecha <= hoy Lima
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+  const hoyMs = new Date(lima.getFullYear(), lima.getMonth(), lima.getDate()).getTime();
+
+  let count = 0;
+  cfg.fechas.forEach(f => {
+    const [dd, mm] = f.split('/').map(Number);
+    const fMs = new Date(lima.getFullYear(), mm-1, dd).getTime();
+    if (fMs <= hoyMs) count++;
+  });
+  return Math.max(count, 1);
+}
+
+function pctInfo(s1, s2, s3, s4) {
+  const cfg = getSesConfig();
+  const totalSes = cfg ? cfg.totalSes : 4; // siempre sobre total del curso
+  const vals = [s1, s2, s3, s4].slice(0, totalSes);
+  const ok = vals.filter(v => v==='a'||v==='j').length;
+  const pct = Math.round(ok / totalSes * 100);
+  const cls = pct>=75?'ok':pct>=50?'warn':'bad';
+  return { pct, cls, ok, realizadas: totalSes };
+}
+
+function renderTablaAdmin(filtro='', estado='') {
+  const tbody = document.getElementById('tbody-admin');
+  tbody.innerHTML = '';
+  const part = getPartActivos();
+  const cfg = getSesConfig();
+  const sesActiva = getSesionActivaIdx();
+  // Actualizar encabezados de columnas de sesión
+  const thSes = document.querySelectorAll('.th-ses');
+  if (thSes.length >= 4 && cfg.fechas) {
+    cfg.fechas.forEach((f, i) => { if (thSes[i]) thSes[i].textContent = f; });
+    for (let i = cfg.fechas.length; i < 4; i++) { if (thSes[i]) thSes[i].textContent = '–'; }
+  }
+  part.forEach((p, i) => {
+    const q = filtro.toLowerCase();
+    if (q && !p.n.toLowerCase().includes(q) && !p.e.toLowerCase().includes(q) && !p.d.includes(q)) return;
+    const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
+    if (estado==='bajo75' && pct>=75) return;
+    if (estado==='faltas' && p.s1!=='f' && p.s2!=='f') return;
+
+    // Admin puede editar todas las sesiones — sesiones cerradas requieren motivo
+    const mkAdm = (s, idx, sesNum) => {
+      const lbl = s==='a'?'✓':s==='f'?'✗':s==='j'?'J':'–';
+      const sesIdx = sesNum - 1;
+      const esCerrada = sesActiva >= 0 ? sesIdx < sesActiva : true;
+      if (sesIdx >= cfg.totalSes) return `<td style="text-align:center"><button class="chk b" style="cursor:not-allowed;opacity:0.2">–</button></td>`;
+      if (esCerrada) {
+        // Sesión cerrada: admin puede editar con motivo
+        return `<td style="text-align:center"><button class="chk ${s} adm-cerrada" onclick="rotarAdmin(${idx},${sesNum})" title="Sesión cerrada — requiere motivo">${lbl}</button></td>`;
+      }
+      // Sesión activa o futura: editable libremente
+      return `<td style="text-align:center"><button class="chk ${s}" onclick="rotarAdmin(${idx},${sesNum})">${lbl}</button></td>`;
+    };
+
+    const tr = document.createElement('tr');
+    if (pct<75) tr.classList.add('bajo75');
+    tr.innerHTML = `
+      <td style="color:#9ca3af;font-size:10px">${i+1}</td>
+      <td><div class="np">${p.n}</div><div class="cs">${p.c}</div></td>
+      <td><span class="emp-badge">${p.e}</span></td>
+      <td style="font-size:11px;font-family:monospace;color:#6b7280">${p.d}</td>`;
+    tr.innerHTML += mkAdm(p.s1,i,1) + mkAdm(p.s2,i,2) + mkAdm(p.s3,i,3) + mkAdm(p.s4,i,4);
+    tr.innerHTML += `<td class="pct-cell"><div class="pct-num ${cls}">${pct}%</div><div class="pct-bar ${cls}" style="width:${pct}%"></div></td>`;
+    tbody.appendChild(tr);
+  });
+  // Totales dinámicos
+  const tot = document.createElement('tr');
+  tot.className = 'tot-row';
+  const total = part.length;
+  const t1 = part.filter(p=>p.s1==='a'||p.s1==='j').length;
+  const t2 = part.filter(p=>p.s2==='a'||p.s2==='j').length;
+  const t3 = part.filter(p=>p.s3==='a'||p.s3==='j').length;
+  const t4 = part.filter(p=>p.s4==='a'||p.s4==='j').length;
+  const hasSes3 = cfg.totalSes >= 3;
+  const hasSes4 = cfg.totalSes >= 4;
+  tot.innerHTML = `<td colspan="4">Total por sesión</td><td>${t1}/${total}</td><td>${t2}/${total}</td><td>${hasSes3?t3+'/'+total:'–'}</td><td>${hasSes4?t4+'/'+total:'–'}</td><td>–</td>`;
+  tbody.appendChild(tot);
+  renderDashboard();
+}
+
+// ── EDICIÓN ADMIN ─────────────────────────────────────────
+let _admEditPendiente = null; // {idx, sesNum, nuevoEstado}
+
+function rotarAdmin(idx, sesNum) {
+  const p = PARTICIPANTES[idx];
+  const keys = ['s1','s2','s3','s4'];
+  const key = keys[sesNum-1];
+  const orden = ['','a','f','j'];
+  const nuevoEstado = orden[(orden.indexOf(p[key])+1)%orden.length];
+  const sesActiva = getSesionActivaIdx();
+  const sesIdx = sesNum - 1;
+  const esCerrada = sesActiva >= 0 ? sesIdx < sesActiva : true;
+
+  if (esCerrada) {
+    // Pedir motivo antes de aplicar
+    _admEditPendiente = { idx, sesNum, key, nuevoEstado };
+    const cfg = getSesConfig();
+    const fecha = cfg && cfg.fechas ? cfg.fechas[sesIdx] : `Sesión ${sesNum}`;
+    document.getElementById('modal-motivo-titulo').textContent = `Modificar asistencia — ${p.n}`;
+    document.getElementById('modal-motivo-detalle').textContent = `Sesión ${sesNum} (${fecha}) · Estado actual: ${p[key]||'–'} → ${nuevoEstado||'–'}`;
+    document.getElementById('modal-motivo-txt').value = '';
+    document.getElementById('modal-motivo').classList.add('open');
+  } else {
+    p[key] = nuevoEstado;
+    autoguardar();
+    renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
+  }
+}
+
+function confirmarMotivoAdmin() {
+  const motivo = document.getElementById('modal-motivo-txt').value.trim();
+  if (!motivo) { document.getElementById('modal-motivo-err').style.display='block'; return; }
+  document.getElementById('modal-motivo-err').style.display='none';
+  if (_admEditPendiente) {
+    const { idx, key, nuevoEstado } = _admEditPendiente;
+    PARTICIPANTES[idx][key] = nuevoEstado;
+    // Registrar en auditoría local y SharePoint
+    const entry = { accion: 'modificacion_admin', usuario: dniActual, timestamp: new Date().toISOString(), motivo, participante: PARTICIPANTES[idx].n, sesion: key, estado: nuevoEstado };
+    console.log('Auditoría:', entry);
+    spRegistrarAuditoria('modificacion_admin - ' + PARTICIPANTES[idx].n + ' → ' + nuevoEstado, key, motivo);
+    spGuardarParticipante(PARTICIPANTES[idx]);
+    _admEditPendiente = null;
+  }
+  cerrarModal('modal-motivo');
+  autoguardar();
+  renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
+}
+
+function cancelarMotivoAdmin() {
+  _admEditPendiente = null;
+  cerrarModal('modal-motivo');
+}
+
+function filtrarTablaAdmin(v) { renderTablaAdmin(v); }
+function filtrarEstadoAdmin(v) { renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'', v); }
+
+// ── BUSCAR PARTICIPANTE ──────────────────────────────────
+function buscarParticipante() {
+  const q = document.getElementById('busca-part').value.toLowerCase().trim();
+  const res = document.getElementById('part-resultado');
+  if (q.length < 2) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">Escribe al menos 2 caracteres para buscar.</div>'; return; }
+  const found = PARTICIPANTES.filter(p => p.n.toLowerCase().includes(q) || p.d.includes(q));
+  if (!found.length) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">No se encontraron resultados.</div>'; return; }
+  res.innerHTML = found.map(p => {
+    const ini = p.n.split(' ').slice(0,2).map(x=>x[0]).join('');
+    const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
+    return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:var(--radius-lg);padding:16px;margin-bottom:10px">
+      <div class="part-header">
+        <div class="part-avatar">${ini}</div>
+        <div><div class="part-nom">${p.n}</div><div class="part-meta">${p.c} · ${p.e} · DNI ${p.d}</div></div>
+      </div>
+      <div style="font-size:12px;font-weight:500;color:#374151;margin-bottom:8px">Historial de cursos InnovAcción 2026:</div>
+      <div class="part-cursos">
+        <div class="part-curso-row"><span class="part-curso-nom">Claude Nivel Básico – Grupo 1</span><span class="pct-num ${cls}">${pct}%</span></div>
+        <div class="part-curso-row" style="color:#9ca3af"><span class="part-curso-nom" style="color:#9ca3af">Otros cursos no disponibles en esta vista</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ADMINS ────────────────────────────────────────────────
+function toggleFormAdm() {
+  const form = document.getElementById('adm-form');
+  form.classList.toggle('open');
+  const btn = document.getElementById('btn-add-adm');
+  btn.innerHTML = form.classList.contains('open')
+    ? '<i class="ti ti-x"></i> Cancelar'
+    : '<i class="ti ti-plus"></i> Agregar nuevo administrador';
+}
+function agregarAdmin() {
+  const dni = document.getElementById('new-adm-dni').value.trim();
+  const nom = document.getElementById('new-adm-nom').value.trim();
+  const cargo = document.getElementById('new-adm-cargo').value.trim();
+  if (!dni || !nom || !cargo) { alert('Completa todos los campos.'); return; }
+  toggleFormAdm();
+  alert(`Administrador ${nom} (DNI: ${dni}) agregado. Contraseña inicial: ${dni}`);
+}
+
+// ── CAMBIAR CONTRASEÑA PANEL ──────────────────────────────
+function onSelectAdm() {
+  const val = document.getElementById('pass-select-adm').value;
+  const area = document.getElementById('pass-form-area');
+  const actGroup = document.getElementById('pass-actual-group');
+  const resetBtn = document.getElementById('btn-reset-pass');
+  if (!val) { area.style.display = 'none'; return; }
+  area.style.display = 'block';
+  if (val === 'self') {
+    actGroup.style.display = 'block';
+    resetBtn.style.display = 'none';
+  } else {
+    actGroup.style.display = 'none';
+    resetBtn.style.display = 'flex';
+  }
+}
+
+function actualizarPassAdmin() {
+  const val = document.getElementById('pass-select-adm').value;
+  if (!val) return;
+  const inputs = document.querySelectorAll('#pass-form-area .pass-input');
+  const targetDni = val === 'self' ? dniActual : val;
+  let nueva, conf;
+  if (val === 'self') {
+    const actual = inputs[0].value;
+    nueva = inputs[1].value; conf = inputs[2].value;
+    if (actual !== ADMINS[dniActual].pass) { alert('Contraseña actual incorrecta.'); return; }
+  } else {
+    nueva = inputs[1].value; conf = inputs[2].value;
+  }
+  if (nueva.length < 8) { alert('La contraseña debe tener al menos 8 caracteres.'); return; }
+  if (nueva === targetDni) { alert('La contraseña no puede ser igual al DNI.'); return; }
+  if (nueva !== conf) { alert('Las contraseñas no coinciden.'); return; }
+  ADMINS[targetDni].pass = nueva;
+  ADMINS[targetDni].primer = false;
+  lsGuardarAdmins();
+  inputs.forEach(i => i.value = '');
+  document.getElementById('pass-form-area').style.display = 'none';
+  document.getElementById('pass-select-adm').value = '';
+  alert('✓ Contraseña actualizada correctamente.');
+}
+
+function resetearPassAdmin() {
+  const val = document.getElementById('pass-select-adm').value;
+  if (!val || val === 'self') return;
+  if (!confirm(`¿Resetear contraseña de ${ADMINS[val].nombre} a su DNI (${val})?`)) return;
+  ADMINS[val].pass = val;
+  ADMINS[val].primer = true;
+  lsGuardarAdmins();
+  document.getElementById('pass-form-area').style.display = 'none';
+  document.getElementById('pass-select-adm').value = '';
+  alert('✓ Contraseña reseteada al DNI del usuario.');
+}
+
+// ── LOGIN FACILITADOR ────────────────────────────────────
+function loginFacilitador() {
+  try {
+    const dni = document.getElementById('fac-dni').value.trim();
+    const err = document.getElementById('fac-err');
+    if (dni === FAC_DNI) {
+      err.style.display = 'none';
+      document.getElementById('top-badge').textContent = 'Facilitador';
+      document.getElementById('top-badge').className = 'top-badge badge-fac';
+      document.getElementById('top-badge').style.display = 'inline-block';
+      document.getElementById('top-user').style.display = 'flex';
+      document.getElementById('top-user-txt').textContent = 'Asmat Rabanal, César · Facilitador';
+      document.getElementById('btn-cerrar-top').style.display = 'flex';
+      // Hora Lima (UTC-5)
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const lima = new Date(utc + (-5 * 60) * 60000);
+      const h = lima.getHours()%12||12;
+      const min = String(lima.getMinutes()).padStart(2,'0');
+      const ap = lima.getHours()>=12?'pm':'am';
+      const horaStr = `${String(h).padStart(2,'0')}:${min} ${ap}`;
+      const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+      const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      const fechaStr = `${dias[lima.getDay()]} ${lima.getDate()} de ${meses[lima.getMonth()]} de ${lima.getFullYear()}`;
+      document.getElementById('hora-habil').textContent = horaStr;
+      document.getElementById('fecha-habil').textContent = fechaStr;
+      document.getElementById('hora-bottom').textContent = horaStr;
+      renderTablaFac();
+      ir('v-registro');
+      iniciarInactividad();
+    } else {
+      err.style.display = 'block';
+    }
+  } catch(e) {
+    alert('Error al ingresar: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ── TABLA FACILITADOR ────────────────────────────────────
+let filtroFacTexto = '', filtroFacEstado = '';
+function renderTablaFac() {
+  const tbody = document.getElementById('tbody-fac');
+  tbody.innerHTML = '';
+  let bajo = 0;
+  const cfg = getSesConfig();
+  const sesActiva = getSesionActivaIdx(); // 0-based, -1 si no hay sesión hoy
+  const realizadas = sesionesRealizadas();
+
+  // Actualizar encabezados de columnas de sesión dinámicamente
+  const thSes = document.querySelectorAll('.th-ses-fac');
+  thSes.forEach((th, i) => {
+    if (cfg && cfg.fechas && i < cfg.fechas.length) {
+      th.textContent = cfg.fechas[i];
+      th.style.display = '';
+    } else {
+      th.style.display = 'none';
+    }
+  });
+
+  const keySes = ['s1','s2','s3','s4'];
+  const totalSes = cfg ? cfg.totalSes : 4;
+
+  // 4. Indicador de progreso en tiempo real
+  const marcados = sesActiva >= 0 ? PARTICIPANTES.filter(p => {
+    const v = p[keySes[sesActiva]];
+    return v === 'a' || v === 'f' || v === 'j';
+  }).length : 0;
+  const sinMarcar = PARTICIPANTES.length - marcados;
+  const progEl = document.getElementById('progreso-fac');
+  if (progEl) {
+    progEl.textContent = sesActiva >= 0
+      ? `${marcados}/${PARTICIPANTES.length} marcados${sinMarcar > 0 ? ` · ${sinMarcar} pendientes` : ' ✓'}`
+      : '';
+  }
+
+  // 5. Ordenar: sin marcar en sesión activa primero
+  const partOrdenados = [...PARTICIPANTES];
+  if (sesActiva >= 0) {
+    partOrdenados.sort((a, b) => {
+      const va = a[keySes[sesActiva]] || '';
+      const vb = b[keySes[sesActiva]] || '';
+      const esVacioA = va === '' ? 0 : 1;
+      const esVacioB = vb === '' ? 0 : 1;
+      return esVacioA - esVacioB;
+    });
+  }
+
+  // 7. Conteo por empresa en filtro
+  const empFiltro = document.querySelector('#v-registro select');
+
+  partOrdenados.forEach((p, i) => {
+    const idxReal = PARTICIPANTES.indexOf(p);
+    const q = filtroFacTexto.toLowerCase();
+    if (q && !p.n.toLowerCase().includes(q) && !p.e.toLowerCase().includes(q) && !p.d.includes(q)) return;
+    const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
+    if (filtroFacEstado==='bajo75' && pct>=75) return;
+    if (filtroFacEstado==='faltas' && p.s1!=='f' && p.s2!=='f') return;
+    if (filtroFacEstado==='sinmarcar' && sesActiva >= 0 && (p[keySes[sesActiva]] !== '')) return;
+    if (pct<75) bajo++;
+
+    const mkCel = (s, idx, sesNum) => {
+      const sesIdx = sesNum - 1;
+      const lbl = s==='a'?'✓':s==='f'?'✗':s==='j'?'J':'–';
+      if (sesIdx > realizadas - 1 && sesIdx !== sesActiva) {
+        return `<td style="text-align:center"><button class="chk b" style="cursor:not-allowed;opacity:0.2">–</button></td>`;
+      }
+      if (sesIdx < sesActiva || (sesActiva < 0 && sesIdx < realizadas)) {
+        return `<td style="text-align:center"><button class="chk ${s}" style="cursor:not-allowed;opacity:0.7" title="Sesión cerrada">${lbl}</button></td>`;
+      }
+      if (sesIdx === sesActiva) {
+        return `<td class="col-activa" style="text-align:center"><button class="chk ${s}" onclick="rotarFac(this,${idx},${sesNum})">${lbl}</button></td>`;
+      }
+      return `<td style="text-align:center"><button class="chk ${s}" style="cursor:not-allowed;opacity:0.7" title="Sesión cerrada">${lbl}</button></td>`;
+    };
+
+    const valActiva = sesActiva >= 0 ? (p[keySes[sesActiva]] ?? '') : '';
+    const celSesActiva = sesActiva >= 0
+      ? `<td class="col-activa" style="text-align:center"><button class="chk ${valActiva}" onclick="rotarFac(this,${idxReal},${sesActiva+1})">${valActiva==='a'?'✓':valActiva==='f'?'✗':valActiva==='j'?'J':'–'}</button></td>`
+      : `<td style="text-align:center;opacity:0.2"><button class="chk b" style="cursor:not-allowed">–</button></td>`;
+
+    const tr = document.createElement('tr');
+    if (pct<75) tr.classList.add('bajo75');
+    // 6. Resaltar filas sin marcar
+    if (sesActiva >= 0 && valActiva === '') tr.classList.add('fila-sin-marcar');
+    tr.dataset.idx = idxReal;
+    tr.innerHTML = `
+      <td style="color:rgba(242,242,242,0.35);font-size:10px">${idxReal+1}</td>
+      ${celSesActiva}
+      <td><div class="np">${p.n}</div></td>
+      <td style="font-size:11px;color:rgba(242,242,242,0.5)">${p.c||'–'}</td>
+      <td><span class="emp-badge emp-badge-dark">${p.e}</span></td>
+      <td style="font-size:11px;font-family:monospace;color:rgba(242,242,242,0.4)">${p.d}</td>`;
+    for (let s = 0; s < totalSes; s++) {
+      tr.innerHTML += mkCel(p[keySes[s]] ?? '', idxReal, s + 1);
+    }
+    for (let s = totalSes; s < 4; s++) {
+      tr.innerHTML += `<td style="display:none"></td>`;
+    }
+    tr.innerHTML += `<td class="pct-cell"><div class="pct-num ${cls}">${pct}%</div><div class="pct-bar ${cls}" style="width:${pct}%"></div></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Totales dinámicos con % en línea separada
+  const tot = document.createElement('tr');
+  tot.className = 'tot-row';
+  const total = PARTICIPANTES.length;
+  const totales = keySes.map(k => PARTICIPANTES.filter(p=>p[k]==='a'||p[k]==='j').length);
+  const pcts = totales.map(t => total ? Math.round(t/total*100) : 0);
+  const totSesAct = sesActiva >= 0
+    ? `<td style="text-align:center"><div>${totales[sesActiva]}/${total}</div><div style="font-size:10px;opacity:0.7">${pcts[sesActiva]}%</div></td>`
+    : '<td>–</td>';
+  let totCeldas = '';
+  for (let s = 0; s < totalSes; s++) {
+    totCeldas += `<td><div>${totales[s]}/${total}</div><div style="font-size:10px;opacity:0.7">${pcts[s]}%</div></td>`;
+  }
+  for (let s = totalSes; s < 4; s++) totCeldas += `<td style="display:none"></td>`;
+  tot.innerHTML = `<td></td>${totSesAct}<td colspan="3" style="text-align:left;padding-left:8px">Total por sesión</td><td></td>${totCeldas}<td>–</td>`;
+  tbody.appendChild(tot);
+  // Actualizar encabezado columna sesión activa
+  const thSesAct = document.getElementById('th-ses-activa-fac');
+  if (thSesAct && cfg && cfg.fechas && sesActiva >= 0) {
+    thSesAct.textContent = `Asistencia ${cfg.fechas[sesActiva]}`;
+    thSesAct.style.color = '#10b981';
+    thSesAct.style.background = 'rgba(16,185,129,0.1)';
+    thSesAct.style.fontSize = '11px';
+  }
+  document.getElementById('bajo-txt').textContent = `${bajo} participantes bajo 75%`;
+  actualizarInfoSesion();
+  renderTarjetasSesiones();
+  renderDashboard();
+  resetInactividad();
+}
+
+function rotarFac(btn, idx, ses) {
+  const p = PARTICIPANTES[idx];
+  const keys = ['s1','s2','s3','s4'];
+  const key = keys[ses-1];
+  const orden = ['','a','f','j'];
+  p[key] = orden[(orden.indexOf(p[key])+1)%orden.length];
+  autoguardar();
+  renderTablaFac();
+  renderDashboard();
+  resetInactividad();
+}
+
+function marcarTodos(val) {
+  const key = getSesionActivaKey();
+  if (!key) return; // no hay sesión activa hoy
+  PARTICIPANTES.forEach(p => { p[key] = val; });
+  autoguardar();
+  renderTablaFac();
+}
+
+function filtrarFac() { filtroFacTexto = document.getElementById('buscador-fac').value; renderTablaFac(); }
+function filtrarEstadoFac(v) { filtroFacEstado = v; renderTablaFac(); }
+
+// ── AUTOSAVE ──────────────────────────────────────────────
+let saveTimer;
+function autoguardar() {
+  lsGuardarAsist();
+  lsGuardarAdmins();
+  spGuardarTodos(); // sync SharePoint en background
+  const el = document.getElementById('autosave-status');
+  if (el) {
+    el.className = 'autosave-saving';
+    el.innerHTML = '<i class="ti ti-loader"></i> Guardando...';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      el.className = 'autosave-ok';
+      el.innerHTML = '<i class="ti ti-check"></i> Guardado automáticamente';
+    }, 1200);
+  }
+}
+function guardar() {
+  lsGuardarAsist();
+  lsGuardarAdmins();
+  spGuardarTodos(); // sync SharePoint
+  // Toast prominente con hora Lima
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+  const h = lima.getHours() % 12 || 12;
+  const min = String(lima.getMinutes()).padStart(2, '0');
+  const ap = lima.getHours() >= 12 ? 'pm' : 'am';
+  const horaStr = `${String(h).padStart(2,'0')}:${min} ${ap}`;
+  let toast = document.getElementById('toast-guardado');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-guardado';
+    toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.85);background:#1a1a1a;border:1px solid #10b981;border-radius:12px;padding:20px 32px;display:flex;align-items:center;gap:14px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;';
+    toast.innerHTML = '<div style="width:36px;height:36px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-check" style="color:#fff;font-size:18px"></i></div><div><div style="color:#fff;font-size:15px;font-weight:600">Asistencia guardada correctamente</div><div style="color:#10b981;font-size:12px;margin-top:3px" id="toast-hora"></div></div>';
+    document.body.appendChild(toast);
+  }
+  document.getElementById('toast-hora').textContent = horaStr;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translate(-50%,-50%) scale(1)';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translate(-50%,-50%) scale(0.85)';
+  }, 3000);
+  // También actualizar indicador bottom bar
+  const el = document.getElementById('autosave-status');
+  if (el) { el.className = 'autosave-ok'; el.innerHTML = `<i class="ti ti-check"></i> Guardado · ${horaStr}`; }
+}
+
+// ── FULLSCREEN ────────────────────────────────────────────
+// ── TEMA DÍA / NOCHE ─────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  const icon = document.getElementById('theme-icon');
+  if (icon) {
+    icon.className = isLight ? 'ti ti-moon' : 'ti ti-sun';
+  }
+  localStorage.setItem('ucj_theme', isLight ? 'light' : 'dark');
+}
+
+function cargarTema() {
+  const saved = localStorage.getItem('ucj_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.className = 'ti ti-moon';
+  }
+}
+
+function toggleFullscreen() {
+  const btn = document.getElementById('btn-full');
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+    btn.innerHTML = '<i class="ti ti-minimize"></i> Salir pantalla completa';
+  } else {
+    document.exitFullscreen();
+    btn.innerHTML = '<i class="ti ti-maximize"></i> Pantalla completa';
+  }
+}
+
+// ── SESIÓN / INACTIVIDAD (30 min) ────────────────────────
+let inactivityTimer, countdownTimer, timeoutSecs = 300; // 5 min countdown
+const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 min
+const WARN_BEFORE = 5 * 60 * 1000; // avisar 5 min antes
+
+function iniciarInactividad() {
+  resetInactividad();
+  document.addEventListener('mousemove', resetInactividad);
+  document.addEventListener('keydown', resetInactividad);
+  document.addEventListener('click', resetInactividad);
+}
+
+function resetInactividad() {
+  clearTimeout(inactivityTimer);
+  clearTimeout(countdownTimer);
+  document.getElementById('timeout-banner').classList.remove('show');
+  inactivityTimer = setTimeout(mostrarAviso, INACTIVITY_LIMIT - WARN_BEFORE);
+}
+
+function mostrarAviso() {
+  timeoutSecs = 300;
+  document.getElementById('timeout-banner').classList.add('show');
+  tickCountdown();
+}
+
+function tickCountdown() {
+  timeoutSecs--;
+  const m = Math.floor(timeoutSecs/60);
+  const s = String(timeoutSecs%60).padStart(2,'0');
+  const el = document.getElementById('timeout-countdown');
+  if (el) el.textContent = `${m}:${s}`;
+  if (timeoutSecs <= 0) { cerrarSesion(); return; }
+  countdownTimer = setTimeout(tickCountdown, 1000);
+}
+
+function keepSession() {
+  resetInactividad();
+}
+
+// ── INIT ──────────────────────────────────────────────────
+renderCursos();
+// Iniciar carga desde SharePoint en background
+setTimeout(() => iniciarCargaSP(), 500);
+</script>
+</body>
+</html>
