@@ -1144,7 +1144,7 @@ const msalConfig = {
   },
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
 };
-const msalInstance = new msal.PublicClientApplication(msalConfig);
+let msalInstance = null;
 const SP_SCOPES = ['https://jeruth.sharepoint.com/AllSites.Write', 'https://jeruth.sharepoint.com/AllSites.Read'];
 
 let spSyncActivo = true;
@@ -1152,6 +1152,7 @@ let _spToken = null;
 
 async function getSpToken() {
   try {
+    if (!msalInstance) msalInstance = new msal.PublicClientApplication(msalConfig);
     await msalInstance.initialize();
     // Manejar redirect al cargar la página
     await msalInstance.handleRedirectPromise();
