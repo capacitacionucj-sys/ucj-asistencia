@@ -6,6 +6,7 @@
 <title>UCJ – Sistema de Registro de Asistencia</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -1128,35 +1129,88 @@ function lsCargarSP() {
   try { return localStorage.getItem(LS_SP) || ''; } catch(e) { return ''; }
 }
 
-// ── INTEGRACIÓN SHAREPOINT via POWER AUTOMATE ─────────────
+// ── INTEGRACIÓN SHAREPOINT via MSAL ──────────────────────
 const SP_CURSO_ID = 'CLAUDE_BASICO_G1';
-const SP_URL_GUARDAR  = 'https://defaultfab504c883424cf89900c8901e187d.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a29658f01b9840db9921cc6f8fa97223/triggers/manual/paths/invoke?api-version=1';
-const SP_URL_CARGAR   = 'https://defaultfab504c883424cf89900c8901e187d.47.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/0cb2f21ce44b478e9ae336a8b1a8005a/triggers/manual/paths/invoke/cargar/{cursoID}?api-version=1';
-const SP_URL_AUDITORIA= 'https://defaultfab504c883424cf89900c8901e187d.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8092d5e4fac840d686d9f7b1117828aa/triggers/manual/paths/invoke?api-version=1';
+const SP_SITE = 'https://jeruth.sharepoint.com/sites/CapacitacionCorporativa';
+const SP_LIST_ASIST = 'UCJ_Asistencia_presencial';
+const SP_LIST_AUDIT = 'UCJ_Auditoria_presencial';
 
-let spSyncActivo = true; // se desactiva si hay error de conexión
+// MSAL Config
+const msalConfig = {
+  auth: {
+    clientId: '3e37d027-88fe-4033-9d42-fa3aa2849e1d',
+    authority: 'https://login.microsoftonline.com/fab504c8-8342-4cf8-9900-c8901e187d47',
+    redirectUri: 'https://capacitacionucj-sys.github.io/ucj-asistencia/UCJ_SistemaAsistencia.html',
+  },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
+};
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+const SP_SCOPES = ['https://jeruth.sharepoint.com/AllSites.Write', 'https://jeruth.sharepoint.com/AllSites.Read'];
 
-// Guardar UN participante en SharePoint
+let spSyncActivo = true;
+let _spToken = null;
+
+async function getSpToken() {
+  try {
+    await msalInstance.initialize();
+    // Manejar redirect al cargar la página
+    await msalInstance.handleRedirectPromise();
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      const result = await msalInstance.acquireTokenSilent({ scopes: SP_SCOPES, account: accounts[0] });
+      _spToken = result.accessToken;
+      return _spToken;
+    } else {
+      // Iniciar login con popup
+      const result = await msalInstance.acquireTokenPopup({ scopes: SP_SCOPES });
+      _spToken = result.accessToken;
+      return _spToken;
+    }
+  } catch(e) {
+    console.warn('MSAL error:', e);
+    spSyncActivo = false;
+    return null;
+  }
+}
+
+// Guardar UN participante en SharePoint via REST API
 async function spGuardarParticipante(p) {
   if (!spSyncActivo) return;
   try {
-    const body = {
-      titulo: SP_CURSO_ID + '_' + p.d,
-      cursoID: SP_CURSO_ID,
-      dni: p.d,
-      apellidosNombres: p.n,
-      empresa: p.e,
-      cargo: p.c || '',
-      sesiones: JSON.stringify({ s1: p.s1, s2: p.s2, s3: p.s3, s4: p.s4 }),
-      ultimaActualizacion: new Date().toISOString(),
-      actualizadoPor: dniActual || 'sistema'
-    };
-    await fetch(SP_URL_GUARDAR, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(body),
-      mode: 'no-cors'
+    const token = await getSpToken();
+    if (!token) return;
+    const cursoID = getCursoActivoId();
+    const titulo = cursoID + '_' + p.d;
+    const listUrl = SP_SITE + "/_api/web/lists/getbytitle('" + SP_LIST_ASIST + "')/items";
+    
+    // Buscar si existe
+    const searchResp = await fetch(listUrl + "?=Title eq '" + titulo + "'&=Id", {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata' }
     });
+    const searchData = await searchResp.json();
+    const body = {
+      Title: titulo, CursoID: cursoID, DNI: p.d,
+      Apellidos_Nombres: p.n, Empresa: p.e, Cargo: p.c || '',
+      Sesiones: JSON.stringify({s1:p.s1,s2:p.s2,s3:p.s3,s4:p.s4}),
+      UltimaActualizacion: new Date().toISOString(),
+      ActualizadoPor: dniActual || 'sistema'
+    };
+    if (searchData.value && searchData.value.length > 0) {
+      // Actualizar
+      const id = searchData.value[0].Id;
+      await fetch(listUrl + '(' + id + ')', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata', 'X-HTTP-Method': 'MERGE', 'If-Match': '*' },
+        body: JSON.stringify(body)
+      });
+    } else {
+      // Crear
+      await fetch(listUrl, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata' },
+        body: JSON.stringify(body)
+      });
+    }
   } catch(e) {
     console.warn('SP Guardar error:', e);
     spSyncActivo = false;
@@ -1164,25 +1218,35 @@ async function spGuardarParticipante(p) {
   }
 }
 
-// Guardar TODOS los participantes en SharePoint (en paralelo)
-async function spGuardarTodos() {
-  if (!spSyncActivo) return;
-  await Promise.all(PARTICIPANTES.map(p => spGuardarParticipante(p)));
+function getCursoActivoId() {
+  const nombres = ['CLAUDE_BASICO_G1','CLAUDE_BASICO_G2','INTRO_IA','BIZAGI_2026','FORM_FACILITADORES'];
+  return nombres[cursoActivoIdx] || 'CLAUDE_BASICO_G1';
 }
 
-// Cargar asistencia desde SharePoint y aplicar a PARTICIPANTES
+// Guardar TODOS los participantes en SharePoint
+async function spGuardarTodos() {
+  if (!spSyncActivo) return;
+  const part = getPartActivos();
+  await Promise.all(part.map(p => spGuardarParticipante(p)));
+}
+
+// Cargar asistencia desde SharePoint
 async function spCargarAsistencia() {
   try {
-    const url = SP_URL_CARGAR.replace('{cursoID}', encodeURIComponent(SP_CURSO_ID));
+    const token = await getSpToken();
+    if (!token) return false;
+    const cursoID = getCursoActivoId();
+    const url = SP_SITE + "/_api/web/lists/getbytitle('" + SP_LIST_ASIST + "')/items?=CursoID eq '" + cursoID + "'&=500";
     const resp = await fetch(url, {
-      method: 'GET'
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata' }
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     const items = data.value || [];
-    if (items.length === 0) return false; // no hay datos en SP aún
+    if (items.length === 0) return false;
+    const part = getPartActivos();
     items.forEach(item => {
-      const p = PARTICIPANTES.find(x => x.d === item.DNI);
+      const p = part.find(x => x.d === item.DNI);
       if (p) {
         try {
           const ses = JSON.parse(item.Sesiones || '{}');
@@ -1205,25 +1269,16 @@ async function spCargarAsistencia() {
 // Registrar auditoría en SharePoint
 async function spRegistrarAuditoria(accion, sesion, motivo) {
   try {
+    const token = await getSpToken();
+    if (!token) return;
     const now = new Date().toISOString();
-    await fetch(SP_URL_AUDITORIA, {
+    const url = SP_SITE + "/_api/web/lists/getbytitle('" + SP_LIST_AUDIT + "')/items";
+    await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      mode: 'no-cors',
-      body: JSON.stringify({
-        titulo: now + '_' + dniActual,
-        cursoID: SP_CURSO_ID,
-        dni: dniActual,
-        accion: accion,
-        sesionAfectada: sesion || '',
-        motivo: motivo || '',
-        realizadoPor: dniActual,
-        fechaHora: now
-      })
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata' },
+      body: JSON.stringify({ Title: now+'_'+dniActual, CursoID: getCursoActivoId(), DNI: dniActual, Accion: accion, SesionAfectada: sesion||'', Motivo: motivo||'', RealizadoPor: dniActual, FechaHora: now })
     });
-  } catch(e) {
-    console.warn('SP Auditoria error:', e);
-  }
+  } catch(e) { console.warn('SP Auditoria error:', e); }
 }
 
 // Mostrar alerta SP (una sola vez)
