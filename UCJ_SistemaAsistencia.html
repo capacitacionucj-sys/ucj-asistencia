@@ -931,10 +931,10 @@
         <button class="login-back" onclick="ir('v-inicio')"><i class="ti ti-arrow-left"></i> Volver</button>
         <div class="login-titulo">Acceso de Facilitador</div>
         <div class="login-sub2">Ingresa tu DNI para habilitar el registro de asistencia</div>
-        <div class="ses-info-box">
-          <div class="ses-info-tit">Claude Nivel Básico – Grupo 1</div>
-          <div class="ses-info-meta">César Asmat Rabanal · Tándem · Facilitador Interno<br>32 participantes · 4 sesiones · 8 horas</div>
-          <div class="ses-info-meta"><strong style="color:#fff">Próxima sesión:</strong> Miércoles 10/06/2026 · 5:30 pm</div>
+        <div class="ses-info-box" id="fac-login-info">
+          <div class="ses-info-tit" id="fac-login-nom">–</div>
+          <div class="ses-info-meta" id="fac-login-meta">–</div>
+          <div class="ses-info-meta" id="fac-login-proxima"></div>
           <span class="ses-badge" id="fac-login-badge">–</span>
         </div>
         <div class="form-group">
@@ -956,8 +956,8 @@
       <div class="fac-sticky-header">
       <div class="curso-bar" style="background:var(--rojo);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <div>
-          <div style="color:#fff;font-size:13px;font-weight:500">Claude Nivel Básico – Grupo 1</div>
-          <div style="color:rgba(242,242,242,0.8);font-size:11px;margin-top:2px">Asmat Rabanal, César Sebastian · Tándem · 32 participantes · 4 ses. · 8 hrs · 5:30 pm</div>
+          <div style="color:#fff;font-size:13px;font-weight:500" id="reg-curso-nom">–</div>
+          <div style="color:rgba(242,242,242,0.8);font-size:11px;margin-top:2px" id="reg-curso-meta">–</div>
         </div>
         <div style="display:flex;gap:8px">
           <button onclick="toggleFullscreen()" id="btn-full" style="background:transparent;border:1px solid rgba(242,242,242,0.3);color:rgba(242,242,242,0.8);padding:5px 12px;border-radius:var(--radius);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit">
@@ -1256,7 +1256,8 @@ const FAC_DNI = '18168534';
 let dniActual = '';
 
 const CURSOS = [
-  { nom:'Claude Nivel Básico – Grupo 1', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:2, estado:'En curso', fecha:'Jun 2026', anio:'2026', mes:'Jun' },
+  { nom:'Claude Nivel Básico – Grupo 1', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:4, estado:'Completo', fecha:'Jun 2026', anio:'2026', mes:'Jun' },
+  { nom:'Claude Nivel Básico – Grupo 2', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:0, estado:'En curso', fecha:'Jul 2026', anio:'2026', mes:'Jul' },
   { nom:'Introducción a la IA', meta:'Elek Romero · Barrio · Interno', part:30, ses:4, comp:4, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May' },
   { nom:'Bizagi 2026', meta:'Rodrigo Rodriguez · Sinercorp & Elek Romero · Barrio', part:16, ses:3, comp:3, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May' },
   { nom:'Formación de Facilitadores', meta:'Iosef Navarro V. · UPC · Externo', part:28, ses:3, comp:3, estado:'Completo', fecha:'Abr 2026', anio:'2026', mes:'Abr' },
@@ -1318,6 +1319,42 @@ async function iniciarCargaSP() {
   }
 }
 
+
+// ── PARTICIPANTES CLAUDE BÁSICO G2 ───────────────────────
+const PART_G2 = [
+  {n:'Alvarez Geldres, Nayli Massiele',c:'Asistente Comercial Nacionales',e:'Global Sourcing',d:'74291537',s1:'',s2:'',s3:'',s4:''},
+  {n:'Celiz Ocampo, Miguel Angel',c:'Gerente de Ventas',e:'Global Sourcing',d:'06245639',s1:'',s2:'',s3:'',s4:''},
+  {n:'Flores Medina, Bryan Paul',c:'Analista Comercial',e:'Lukers',d:'48277997',s1:'',s2:'',s3:'',s4:''},
+  {n:'Cardenas Cardenas, Andrea Cristina',c:'Practicante de Administración y Proyectos',e:'Lukers',d:'75313669',s1:'',s2:'',s3:'',s4:''},
+  {n:'Nunura Pupuche, Merly Isabel',c:'Asistente Comercial',e:'Primatex',d:'76981554',s1:'',s2:'',s3:'',s4:''},
+  {n:'Alva Peramas, Paulo Cesar',c:'KY PP Samitex',e:'Samitex',d:'43501230',s1:'',s2:'',s3:'',s4:''},
+  {n:'Bendita Mamani, Veronika Cecilia',c:'Auxiliar de Ingeniería',e:'Samitex',d:'40314956',s1:'',s2:'',s3:'',s4:''},
+  {n:'De La Cruz Paiva, Alexandra',c:'Liquidador',e:'Samitex',d:'75800617',s1:'',s2:'',s3:'',s4:''},
+  {n:'Uscubilca Aguilar, Karina',c:'Analista de Calidad',e:'Samitex',d:'70284282',s1:'',s2:'',s3:'',s4:''},
+  {n:'Juarez Corpus, Jhonatan Alexander',c:'Jefe de Seguridad Corporativo',e:'Sinercorp',d:'42249663',s1:'',s2:'',s3:'',s4:''},
+  {n:'Avila Huaman, Stephanie Janeth',c:'Analista de Comex',e:'Sinercorp',d:'71385931',s1:'',s2:'',s3:'',s4:''},
+  {n:'Nuñez Salome, Edson Enrique',c:'Analista Jr de Compras',e:'Sinercorp',d:'75886489',s1:'',s2:'',s3:'',s4:''},
+  {n:'Quiroz Alfaro, Liliana Milagros',c:'Compradora Institucional',e:'Sinercorp',d:'41202244',s1:'',s2:'',s3:'',s4:''},
+  {n:'Neira Diaz, Diana Katherina',c:'Asistente / Planeamiento',e:'Sinercorp',d:'43100310',s1:'',s2:'',s3:'',s4:''},
+  {n:'Yarleque Timana, Hector',c:'Comprador',e:'Sinercorp',d:'25715260',s1:'',s2:'',s3:'',s4:''},
+  {n:'Saca Ordoñez, Keizo Erick',c:'Auditor Senior de Calidad',e:'Sinercorp',d:'71766055',s1:'',s2:'',s3:'',s4:''},
+  {n:'Aquino Meneses, Abraham Raphael',c:'Analista de Importaciones',e:'Sinercorp',d:'71012914',s1:'',s2:'',s3:'',s4:''},
+  {n:'Angulo Aguilar, Carlos Enrique',c:'Analista Jr de Comercio Exterior',e:'Sinercorp',d:'77224885',s1:'',s2:'',s3:'',s4:''},
+  {n:'Medina Requena, Elvis Ruben',c:'Comprador',e:'Sinercorp',d:'45462500',s1:'',s2:'',s3:'',s4:''},
+  {n:'Chang Grillo, Sau Man',c:'Analista de Selección',e:'Tándem',d:'70558701',s1:'',s2:'',s3:'',s4:''},
+  {n:'Quispe Veliz, Yassmin Lucero',c:'Asistente',e:'Tándem',d:'76131689',s1:'',s2:'',s3:'',s4:''},
+  {n:'Gonzales Cardenas, Oscar Maximo',c:'Contador de Impuestos',e:'Tándem',d:'45980183',s1:'',s2:'',s3:'',s4:''},
+  {n:'Pilcon Lozano, Silvia Mirella',c:'Auxiliar de Contabilidad',e:'Tándem',d:'76217934',s1:'',s2:'',s3:'',s4:''},
+  {n:'Cuadros Garay, Susan',c:'Analista Contable',e:'Tándem',d:'41798807',s1:'',s2:'',s3:'',s4:''},
+  {n:'Diaz Collantes, Jose Angeles',c:'Coordinador de Compras',e:'Tándem',d:'40024876',s1:'',s2:'',s3:'',s4:''},
+  {n:'Blas Rodriguez, Luis Fernando',c:'Analista Tributario',e:'Tándem',d:'73211256',s1:'',s2:'',s3:'',s4:''},
+  {n:'Vega Chavez, Juan Carlos',c:'Asistente Administrativo',e:'Tándem',d:'44074228',s1:'',s2:'',s3:'',s4:''},
+  {n:'Pumachoque Sedano, Bryan Ricardo',c:'Analista Contable',e:'Tándem',d:'75996100',s1:'',s2:'',s3:'',s4:''},
+  {n:'Rojas Jehlffer, Diego Oliver',c:'Asistente de Tesorería',e:'Tándem',d:'72508447',s1:'',s2:'',s3:'',s4:''},
+  {n:'Blanco Venites, Zugeidy Mariana',c:'Médico Ocupacional',e:'Tándem',d:'002816077',s1:'',s2:'',s3:'',s4:''},
+  {n:'Diaz Camacho, Raisa Stephany',c:'Analista de Compras',e:'Tándem',d:'47244197',s1:'',s2:'',s3:'',s4:''},
+  {n:'Rios Tito, Luany',c:'Coordinador de Selección',e:'Tándem',d:'72701397',s1:'',s2:'',s3:'',s4:''},
+];
 // ── DATOS CURSOS COMPLETADOS ──────────────────────────────
 const PART_INTROIA = [
   {n:'Brenda Maria Teran Ulloa',c:'',e:'Sinercorp',d:'72846633',s1:'a',s2:'f',s3:'a',s4:'a'},
@@ -1408,19 +1445,25 @@ const CURSO_CONFIG = {
     totalSes: 4,
     editable: true,
   },
-  1: { // Intro IA
+  1: { // Claude Básico G2
+    part: PART_G2,
+    fechas: ['08/07','10/07','15/07','17/07'],
+    totalSes: 4,
+    editable: true,
+  },
+  2: { // Intro IA
     part: PART_INTROIA,
     fechas: ['18/05','25/05','27/05','01/06'],
     totalSes: 4,
     editable: false,
   },
-  2: { // Bizagi
+  3: { // Bizagi
     part: PART_BIZAGI,
     fechas: ['04/05','07/05','11/05'],
     totalSes: 3,
     editable: false,
   },
-  3: { // Facilitadores
+  4: { // Facilitadores
     part: PART_FAC,
     fechas: ['06/04','09/04','13/04'],
     totalSes: 3,
@@ -1664,10 +1707,34 @@ setInterval(actualizarFecha, 30000);
 cargarTema();
 renderTarjetasSesiones();
 
-// Actualizar badge dinámica en pantalla login facilitador
+// Actualizar badge e info dinámica en pantalla login facilitador
 (function actualizarBadgeFac() {
   const badge = document.getElementById('fac-login-badge');
   if (!badge) return;
+  // Encontrar curso activo (editable) con sesiones futuras o de hoy
+  let cursoIdx = 0;
+  for (let i = 0; i < CURSOS.length; i++) {
+    if (CURSO_CONFIG[i] && CURSO_CONFIG[i].editable) {
+      const now = new Date();
+      const utcNow = now.getTime() + now.getTimezoneOffset() * 60000;
+      const limaNow = new Date(utcNow + (-5 * 60) * 60000);
+      const hoyStr = String(limaNow.getDate()).padStart(2,'0') + '/' + String(limaNow.getMonth()+1).padStart(2,'0');
+      const haySesionFutura = CURSO_CONFIG[i].fechas.some(f => {
+        const [dd,mm] = f.split('/').map(Number);
+        const fMs = new Date(limaNow.getFullYear(), mm-1, dd).getTime();
+        const hoyMs = new Date(limaNow.getFullYear(), limaNow.getMonth(), limaNow.getDate()).getTime();
+        return fMs >= hoyMs;
+      });
+      if (haySesionFutura) { cursoIdx = i; break; }
+    }
+  }
+  cursoActivoIdx = cursoIdx;
+  // Actualizar info del login
+  const curso = CURSOS[cursoIdx];
+  const nomEl = document.getElementById('fac-login-nom');
+  const metaEl = document.getElementById('fac-login-meta');
+  if (nomEl) nomEl.textContent = curso ? curso.nom : '–';
+  if (metaEl) metaEl.innerHTML = curso ? curso.meta.replace(' · ', '<br>') + '<br>' + (CURSO_CONFIG[cursoIdx]?.part?.length || curso.part) + ' participantes · ' + curso.ses + ' sesiones · ' + (curso.ses * 2) + ' horas' : '–';
   const cfg = getSesConfig();
   if (!cfg || !cfg.fechas) return;
   const sesActiva = getSesionActivaIdx();
@@ -2235,6 +2302,29 @@ function loginFacilitador() {
       document.getElementById('hora-habil').textContent = horaStr;
       document.getElementById('fecha-habil').textContent = fechaStr;
       document.getElementById('hora-bottom').textContent = horaStr;
+      // Asegurar curso activo correcto antes de renderizar
+      let bestIdx = 0;
+      for (let i = 0; i < CURSOS.length; i++) {
+        if (CURSO_CONFIG[i] && CURSO_CONFIG[i].editable) {
+          const now2 = new Date();
+          const utc2 = now2.getTime() + now2.getTimezoneOffset() * 60000;
+          const lima2 = new Date(utc2 + (-5 * 60) * 60000);
+          const haySesionFutura = CURSO_CONFIG[i].fechas.some(f => {
+            const [dd,mm] = f.split('/').map(Number);
+            const fMs = new Date(lima2.getFullYear(), mm-1, dd).getTime();
+            const hoyMs2 = new Date(lima2.getFullYear(), lima2.getMonth(), lima2.getDate()).getTime();
+            return fMs >= hoyMs2;
+          });
+          if (haySesionFutura) { bestIdx = i; break; }
+        }
+      }
+      cursoActivoIdx = bestIdx;
+      // Actualizar header dinámico
+      const cursoActivo = CURSOS[bestIdx];
+      const nomReg = document.getElementById('reg-curso-nom');
+      const metaReg = document.getElementById('reg-curso-meta');
+      if (nomReg && cursoActivo) nomReg.textContent = cursoActivo.nom;
+      if (metaReg && cursoActivo) metaReg.textContent = cursoActivo.meta.replace(/ · /g, ' · ') + ' · ' + (CURSO_CONFIG[bestIdx]?.part?.length || cursoActivo.part) + ' participantes · ' + cursoActivo.ses + ' ses. · ' + (cursoActivo.ses * 2) + ' hrs · 5:30 pm';
       renderTablaFac();
       ir('v-registro');
       iniciarInactividad();
@@ -2272,20 +2362,21 @@ function renderTablaFac() {
   const totalSes = cfg ? cfg.totalSes : 4;
 
   // 4. Indicador de progreso en tiempo real
-  const marcados = sesActiva >= 0 ? PARTICIPANTES.filter(p => {
+  const partActivos = getPartActivos();
+  const marcados = sesActiva >= 0 ? partActivos.filter(p => {
     const v = p[keySes[sesActiva]];
     return v === 'a' || v === 'f' || v === 'j';
   }).length : 0;
-  const sinMarcar = PARTICIPANTES.length - marcados;
+  const sinMarcar = partActivos.length - marcados;
   const progEl = document.getElementById('progreso-fac');
   if (progEl) {
     progEl.textContent = sesActiva >= 0
-      ? `${marcados}/${PARTICIPANTES.length} marcados${sinMarcar > 0 ? ` · ${sinMarcar} pendientes` : ' ✓'}`
+      ? `${marcados}/${partActivos.length} marcados${sinMarcar > 0 ? ` · ${sinMarcar} pendientes` : ' ✓'}`
       : '';
   }
 
   // 5. Ordenar: sin marcar en sesión activa primero
-  const partOrdenados = [...PARTICIPANTES];
+  const partOrdenados = [...partActivos];
   if (sesActiva >= 0) {
     partOrdenados.sort((a, b) => {
       const va = a[keySes[sesActiva]] || '';
@@ -2300,7 +2391,7 @@ function renderTablaFac() {
   const empFiltro = document.querySelector('#v-registro select');
 
   partOrdenados.forEach((p, i) => {
-    const idxReal = PARTICIPANTES.indexOf(p);
+    const idxReal = partActivos.indexOf(p);
     const q = filtroFacTexto.toLowerCase();
     if (q && !p.n.toLowerCase().includes(q) && !p.e.toLowerCase().includes(q) && !p.d.includes(q)) return;
     const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
@@ -2354,8 +2445,8 @@ function renderTablaFac() {
   // Totales dinámicos con % en línea separada
   const tot = document.createElement('tr');
   tot.className = 'tot-row';
-  const total = PARTICIPANTES.length;
-  const totales = keySes.map(k => PARTICIPANTES.filter(p=>p[k]==='a'||p[k]==='j').length);
+  const total = partActivos.length;
+  const totales = keySes.map(k => partActivos.filter(p=>p[k]==='a'||p[k]==='j').length);
   const pcts = totales.map(t => total ? Math.round(t/total*100) : 0);
   const totSesAct = sesActiva >= 0
     ? `<td style="text-align:center"><div>${totales[sesActiva]}/${total}</div><div style="font-size:10px;opacity:0.7">${pcts[sesActiva]}%</div></td>`
@@ -2383,7 +2474,7 @@ function renderTablaFac() {
 }
 
 function rotarFac(btn, idx, ses) {
-  const p = PARTICIPANTES[idx];
+  const p = getPartActivos()[idx];
   const keys = ['s1','s2','s3','s4'];
   const key = keys[ses-1];
   const orden = ['','a','f','j'];
@@ -2397,7 +2488,7 @@ function rotarFac(btn, idx, ses) {
 function marcarTodos(val) {
   const key = getSesionActivaKey();
   if (!key) return; // no hay sesión activa hoy
-  PARTICIPANTES.forEach(p => { p[key] = val; });
+  getPartActivos().forEach(p => { p[key] = val; });
   autoguardar();
   renderTablaFac();
 }
