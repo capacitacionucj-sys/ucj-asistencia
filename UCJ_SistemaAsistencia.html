@@ -562,6 +562,16 @@
         </button>
         <div class="login-error" id="adm-err">DNI o contraseña incorrectos.</div>
         <div class="login-hint">¿Primer ingreso? Tu contraseña inicial es tu DNI. Se te pedirá cambiarla.</div>
+        <button class="login-back" style="justify-content:center;width:100%;margin-top:10px" onclick="toggleOlvideClave()"><i class="ti ti-help-circle"></i> ¿Olvidaste tu contraseña?</button>
+        <div id="olvide-box" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--gris-borde)">
+          <div class="form-group">
+            <label class="form-label">Confirma tu DNI para restablecer tu contraseña</label>
+            <input class="form-input" type="text" id="olvide-dni" placeholder="DNI" maxlength="8" />
+          </div>
+          <button class="btn-primary" onclick="restablecerClaveAdmin()"><i class="ti ti-refresh"></i> Restablecer contraseña</button>
+          <div class="login-error" id="olvide-err">DNI no registrado como administrador.</div>
+          <div class="login-hint" id="olvide-ok" style="display:none;color:#8BC34A">Tu contraseña fue restablecida a tu DNI. Inicia sesión para crear una nueva.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -788,6 +798,8 @@
               <option value="faltas">Con faltas</option>
             </select>
             <span class="ts"></span>
+            <span id="admin-live-status" style="font-size:11px;color:#6b7280;margin-right:8px">· Auto-actualiza cada 20s</span>
+            <button class="btn-sm" onclick="refrescarAsistenciaAdmin(true)"><i class="ti ti-refresh"></i> Actualizar ahora</button>
             <div class="legend">
               <span style="font-size:11px;color:#6b7280">Estado:</span>
               <div class="leg-item"><div class="leg-dot v">✓</div>Asistió</div>
@@ -1024,9 +1036,10 @@
           <span><i class="ti ti-clock"></i> Habilitado: <span id="hora-bottom" style="color:#fff"></span></span>
           <span class="autosave-ok" id="autosave-status"><i class="ti ti-check"></i> Guardado automáticamente</span>
           <span id="bajo-txt" style="color:rgba(242,242,242,0.6)"></span>
-          <span style="color:rgba(242,242,242,0.3)">· SharePoint sync activo</span>
+          <span id="sp-status-txt" style="color:rgba(242,242,242,0.3)">· Sin conexión — trabajando local</span>
         </div>
         <div style="display:flex;gap:8px">
+          <button class="btn-guardar" id="btn-sp-connect" onclick="conectarSharePoint()" style="background:#0078d4;display:none"><i class="ti ti-cloud"></i> Conectar SharePoint</button>
           <button class="btn-guardar" onclick="guardar()"><i class="ti ti-device-floppy"></i> Guardar</button>
           <button class="btn-exportar" onclick="abrirModalExport()"><i class="ti ti-download"></i> Exportar Excel</button>
         </div>
@@ -1145,31 +1158,79 @@ const msalConfig = {
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false }
 };
 let msalInstance = null;
+let spAccount = null;
+let spConectado = false;
 const SP_SCOPES = ['https://jeruth.sharepoint.com/AllSites.Write', 'https://jeruth.sharepoint.com/AllSites.Read'];
 
 let spSyncActivo = true;
 let _spToken = null;
 
-async function getSpToken() {
+// Actualiza el botón/indicador de estado en la barra inferior
+function actualizarEstadoSP() {
+  const txt = document.getElementById('sp-status-txt');
+  const btn = document.getElementById('btn-sp-connect');
+  if (txt) txt.textContent = spConectado ? '· Conectado a SharePoint' : '· Sin conexión — trabajando local';
+  if (btn) btn.style.display = spConectado ? 'none' : '';
+}
+
+// Inicializa MSAL SIN abrir popup — solo revisa si ya hay una cuenta cacheada.
+// Se llama una sola vez al cargar la página.
+async function initMsal() {
   try {
     if (!msalInstance) msalInstance = new msal.PublicClientApplication(msalConfig);
     await msalInstance.initialize();
-    // Manejar redirect al cargar la página
     await msalInstance.handleRedirectPromise();
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length > 0) {
-      const result = await msalInstance.acquireTokenSilent({ scopes: SP_SCOPES, account: accounts[0] });
-      _spToken = result.accessToken;
-      return _spToken;
-    } else {
-      // Iniciar login con popup
-      const result = await msalInstance.acquireTokenPopup({ scopes: SP_SCOPES });
-      _spToken = result.accessToken;
-      return _spToken;
+      spAccount = accounts[0];
+      spConectado = true;
     }
   } catch(e) {
-    console.warn('MSAL error:', e);
-    spSyncActivo = false;
+    console.warn('MSAL init error:', e);
+  }
+  actualizarEstadoSP();
+}
+
+// Login EXPLÍCITO — debe llamarse únicamente desde el onclick de un botón
+// (acquireTokenPopup solo funciona si el navegador lo reconoce como gesto directo del usuario).
+async function conectarSharePoint() {
+  try {
+    if (!msalInstance) { msalInstance = new msal.PublicClientApplication(msalConfig); await msalInstance.initialize(); }
+    const result = await msalInstance.acquireTokenPopup({ scopes: SP_SCOPES });
+    spAccount = result.account;
+    _spToken = result.accessToken;
+    spConectado = true;
+    spSyncActivo = true;
+    actualizarEstadoSP();
+    mostrarAlertaSP('Conectado a SharePoint');
+    spGuardarTodos();
+    spCargarAsistencia().then(ok => {
+      if (ok) {
+        lsGuardarAsist();
+        if (typeof renderTablaFac === 'function') renderTablaFac();
+        if (typeof renderRegistro === 'function') renderRegistro();
+      }
+    });
+  } catch(e) {
+    console.warn('MSAL login error:', e);
+    spConectado = false;
+    actualizarEstadoSP();
+    mostrarAlertaSP('No se pudo conectar con SharePoint (revisa si el navegador bloqueó el popup)');
+  }
+}
+
+// Obtiene token SOLO por vía silenciosa. Nunca abre un popup aquí —
+// evita que el navegador bloquee la ventana cuando esto se llama en background.
+async function getSpToken() {
+  if (!spSyncActivo || !msalInstance || !spAccount) return null;
+  try {
+    const result = await msalInstance.acquireTokenSilent({ scopes: SP_SCOPES, account: spAccount });
+    _spToken = result.accessToken;
+    return _spToken;
+  } catch(e) {
+    console.warn('MSAL silent error:', e);
+    spConectado = false;
+    actualizarEstadoSP();
     return null;
   }
 }
@@ -1701,6 +1762,80 @@ function exportarExcel() {
   XLSX.writeFile(wb, 'UCJ_ClaudeBasico_Asistencia_' + dd + mm + yyyy + '.xlsx');
   autoguardar();
 }
+
+// ── EXPORT CONSOLIDADO (todos los cursos) — se dispara automáticamente al cerrar sesión ──
+function exportarConsolidadoExcel() {
+  try {
+    if (typeof XLSX === 'undefined') return;
+    const wb = XLSX.utils.book_new();
+    const keySes = ['s1','s2','s3','s4'];
+    const nombresUsados = new Set();
+
+    CURSOS.forEach((c, idx) => {
+      const cfg = CURSO_CONFIG[idx];
+      if (!cfg || !cfg.part || !cfg.part.length) return;
+      const totalSes = cfg.totalSes || 4;
+      const fechasSes = (cfg.fechas || []).map(f => {
+        const [dd, mm] = f.split('/');
+        return `${dd}/${mm}/2026`;
+      });
+
+      const headers = ['#','Apellidos y Nombres','Cargo','Empresa','DNI'];
+      for (let i = 0; i < totalSes; i++) headers.push('Ses. ' + (i+1) + (fechasSes[i] ? ' (' + fechasSes[i] + ')' : ''));
+      headers.push('Asistencias','% Participación','Estado');
+
+      const rows = cfg.part.map((p, i) => {
+        const vals = keySes.slice(0, totalSes).map(k => {
+          const v = p[k];
+          return v==='a' ? 'Asistió' : v==='j' ? 'Justificado' : v==='f' ? 'Faltó' : 'Sin marcar';
+        });
+        const ok = keySes.slice(0, totalSes).filter(k => p[k]==='a'||p[k]==='j').length;
+        const pct = totalSes ? Math.round(ok / totalSes * 100) : 0;
+        const estado = pct >= 75 ? 'Aprobado' : 'En riesgo';
+        return [i+1, p.n, p.c||'', p.e, p.d, ...vals, ok + '/' + totalSes, pct + '%', estado];
+      });
+
+      const totRow = ['','TOTAL POR SESIÓN','','',''];
+      for (let i = 0; i < totalSes; i++) {
+        const k = keySes[i];
+        const t = cfg.part.filter(p => p[k]==='a'||p[k]==='j').length;
+        const pctT = cfg.part.length ? Math.round(t / cfg.part.length * 100) : 0;
+        totRow.push(t + '/' + cfg.part.length + ' · ' + pctT + '%');
+      }
+      totRow.push('','','');
+      rows.push(totRow);
+
+      const wsData = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      ws['!cols'] = [
+        {wch:4},{wch:32},{wch:28},{wch:14},{wch:12},
+        ...Array(totalSes).fill({wch:18}),
+        {wch:12},{wch:16},{wch:12}
+      ];
+
+      // Nombre de hoja válido para Excel: máx 31 caracteres, sin : \ / ? * [ ]
+      let nombreHoja = c.nom.replace(/[:\\\/\?\*\[\]]/g, '-').substring(0, 31);
+      let n = 1;
+      while (nombresUsados.has(nombreHoja)) { nombreHoja = (nombreHoja.substring(0, 28) + '_' + (n++)); }
+      nombresUsados.add(nombreHoja);
+
+      XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
+    });
+
+    if (wb.SheetNames.length === 0) return;
+
+    const hoy = new Date();
+    const dd = String(hoy.getDate()).padStart(2,'0');
+    const mm = String(hoy.getMonth()+1).padStart(2,'0');
+    const yyyy = hoy.getFullYear();
+    const hh = String(hoy.getHours()).padStart(2,'0');
+    const mi = String(hoy.getMinutes()).padStart(2,'0');
+    XLSX.writeFile(wb, 'UCJ_Consolidado_' + dd + mm + yyyy + '_' + hh + mi + '.xlsx');
+    mostrarAlertaSP('Respaldo consolidado (Excel, todos los cursos) descargado');
+  } catch(e) {
+    console.warn('Error en exportación consolidada:', e);
+  }
+}
 function confirmarCerrar() {
   // 6. Convertir vacíos → F en la sesión activa
   const key = getSesionActivaKey();
@@ -1735,6 +1870,8 @@ function confirmarCerrar() {
   document.getElementById('modal-cerrar').classList.add('open');
 }
 function cerrarSesion() {
+  detenerPollingAsistencia();
+  exportarConsolidadoExcel(); // guardado automático consolidado al cerrar sesión
   cerrarModal('modal-cerrar');
   clearTimeout(inactivityTimer);
   clearTimeout(countdownTimer);
@@ -1833,6 +1970,37 @@ function loginAdmin() {
   }
 }
 
+// ── OLVIDÉ CONTRASEÑA (admin) ─────────────────────────────
+function toggleOlvideClave() {
+  const box = document.getElementById('olvide-box');
+  if (box) box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+  const err = document.getElementById('olvide-err'); if (err) err.style.display = 'none';
+  const ok = document.getElementById('olvide-ok'); if (ok) ok.style.display = 'none';
+  const dniInput = document.getElementById('olvide-dni'); if (dniInput) dniInput.value = '';
+}
+
+function restablecerClaveAdmin() {
+  const dni = document.getElementById('olvide-dni').value.trim();
+  const err = document.getElementById('olvide-err');
+  const ok = document.getElementById('olvide-ok');
+  if (!ADMINS[dni]) {
+    ok.style.display = 'none';
+    err.style.display = 'block';
+    return;
+  }
+  ADMINS[dni].pass = dni;
+  ADMINS[dni].primer = true;
+  lsGuardarAdmins(); // persistir el reseteo
+  err.style.display = 'none';
+  ok.style.display = 'block';
+  document.getElementById('olvide-dni').value = '';
+  // Prellenar el DNI en el formulario de login para agilizar el siguiente ingreso
+  const admDni = document.getElementById('adm-dni');
+  if (admDni) admDni.value = dni;
+  const admPass = document.getElementById('adm-pass');
+  if (admPass) admPass.value = '';
+}
+
 function cambiarPassInicial() {
   const nueva = document.getElementById('nueva-pass').value;
   const conf = document.getElementById('conf-pass').value;
@@ -1865,12 +2033,44 @@ function abrirAdmin(dni) {
 }
 
 // ── PANEL ADMIN ──────────────────────────────────────────
+// ── ASISTENCIA EN TIEMPO REAL (vista admin) ───────────────
+let pollAsistenciaTimer = null;
+const POLL_ASISTENCIA_MS = 20000; // 20s
+
+async function refrescarAsistenciaAdmin(manual) {
+  const el = document.getElementById('admin-live-status');
+  if (!spConectado) {
+    if (manual) mostrarAlertaSP('Conéctate a SharePoint para ver la asistencia en tiempo real.');
+    return;
+  }
+  const ok = await spCargarAsistencia();
+  if (ok) {
+    renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value || '');
+    if (typeof renderDashboard === 'function') renderDashboard();
+  }
+  if (el) {
+    const hora = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    el.textContent = '· Actualizado ' + hora;
+  }
+}
+
+function iniciarPollingAsistencia() {
+  detenerPollingAsistencia();
+  refrescarAsistenciaAdmin(false);
+  pollAsistenciaTimer = setInterval(() => refrescarAsistenciaAdmin(false), POLL_ASISTENCIA_MS);
+}
+
+function detenerPollingAsistencia() {
+  if (pollAsistenciaTimer) { clearInterval(pollAsistenciaTimer); pollAsistenciaTimer = null; }
+}
+
 function showPanel(p) {
   document.querySelectorAll('.panel').forEach(el => el.classList.remove('activo'));
   document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('activo'));
   document.getElementById('panel-' + p).classList.add('activo');
   const nav = document.getElementById('nav-' + p);
   if (nav) nav.classList.add('activo');
+  if (p === 'detalle') iniciarPollingAsistencia(); else detenerPollingAsistencia();
 }
 
 function renderCursos(filtro='', anio='2026', mes='') {
@@ -2674,8 +2874,11 @@ function keepSession() {
 
 // ── INIT ──────────────────────────────────────────────────
 renderCursos();
-// Iniciar carga desde SharePoint en background
-setTimeout(() => iniciarCargaSP(), 500);
+// Inicializar MSAL sin popup; si ya hay sesión cacheada, cargar desde SharePoint en background.
+// Si no hay sesión, el botón "Conectar SharePoint" queda visible para que el usuario inicie el login con un clic.
+initMsal().then(() => {
+  if (spConectado) setTimeout(() => iniciarCargaSP(), 500);
+});
 </script>
 </body>
 </html>
