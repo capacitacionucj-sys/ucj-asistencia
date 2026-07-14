@@ -179,6 +179,16 @@
   .cambio-alert-txt { color: rgba(242,242,242,0.8); font-size: 12px; line-height: 1.5; }
   body.light-mode .cambio-alert { background: rgba(191,23,54,0.08) !important; }
   body.light-mode .cambio-alert-txt { color: #1a1a1a !important; }
+  /* Sidebar admin en modo claro */
+  body.light-mode .sidebar { background: #fff !important; border-right-color: #e5e7eb !important; }
+  body.light-mode .sb-user { border-bottom-color: #e5e7eb !important; }
+  body.light-mode .sb-nombre { color: #1a1a1a !important; }
+  body.light-mode .sb-rol { color: #6b7280 !important; }
+  body.light-mode .sb-section { color: #9ca3af !important; }
+  body.light-mode .sb-item { color: #4b5563 !important; }
+  body.light-mode .sb-item:hover { background: #f3f4f6 !important; color: #1a1a1a !important; }
+  body.light-mode .sb-item.activo { background: rgba(191,23,54,0.08) !important; color: var(--rojo) !important; }
+  body.light-mode .sb-bottom { border-top-color: #e5e7eb !important; }
   .form-hint { font-size: 10px; color: rgba(242,242,242,0.35); margin-top: 4px; }
 
   /* ── ADMIN LAYOUT ── */
@@ -1463,38 +1473,38 @@ async function iniciarCargaSP() {
 
 // ── PARTICIPANTES CLAUDE BÁSICO G2 ───────────────────────
 const PART_G2 = [
-  {n:'Alvarez Geldres, Nayli Massiele',c:'Asistente Comercial Nacionales',e:'Global Sourcing',d:'74291537',s1:'',s2:'',s3:'',s4:''},
-  {n:'Celiz Ocampo, Miguel Angel',c:'Gerente de Ventas',e:'Global Sourcing',d:'06245639',s1:'',s2:'',s3:'',s4:''},
-  {n:'Flores Medina, Bryan Paul',c:'Analista Comercial',e:'Lukers',d:'48277997',s1:'',s2:'',s3:'',s4:''},
-  {n:'Cardenas Cardenas, Andrea Cristina',c:'Practicante de Administración y Proyectos',e:'Lukers',d:'75313669',s1:'',s2:'',s3:'',s4:''},
-  {n:'Nunura Pupuche, Merly Isabel',c:'Asistente Comercial',e:'Primatex',d:'76981554',s1:'',s2:'',s3:'',s4:''},
-  {n:'Alva Peramas, Paulo Cesar',c:'KY PP Samitex',e:'Samitex',d:'43501230',s1:'',s2:'',s3:'',s4:''},
-  {n:'Bendita Mamani, Veronika Cecilia',c:'Auxiliar de Ingeniería',e:'Samitex',d:'40314956',s1:'',s2:'',s3:'',s4:''},
-  {n:'De La Cruz Paiva, Alexandra',c:'Liquidador',e:'Samitex',d:'75800617',s1:'',s2:'',s3:'',s4:''},
-  {n:'Uscubilca Aguilar, Karina',c:'Analista de Calidad',e:'Samitex',d:'70284282',s1:'',s2:'',s3:'',s4:''},
-  {n:'Juarez Corpus, Jhonatan Alexander',c:'Jefe de Seguridad Corporativo',e:'Sinercorp',d:'42249663',s1:'',s2:'',s3:'',s4:''},
-  {n:'Avila Huaman, Stephanie Janeth',c:'Analista de Comex',e:'Sinercorp',d:'71385931',s1:'',s2:'',s3:'',s4:''},
-  {n:'Nuñez Salome, Edson Enrique',c:'Analista Jr de Compras',e:'Sinercorp',d:'75886489',s1:'',s2:'',s3:'',s4:''},
-  {n:'Quiroz Alfaro, Liliana Milagros',c:'Compradora Institucional',e:'Sinercorp',d:'41202244',s1:'',s2:'',s3:'',s4:''},
-  {n:'Neira Diaz, Diana Katherina',c:'Asistente / Planeamiento',e:'Sinercorp',d:'43100310',s1:'',s2:'',s3:'',s4:''},
-  {n:'Yarleque Timana, Hector',c:'Comprador',e:'Sinercorp',d:'25715260',s1:'',s2:'',s3:'',s4:''},
-  {n:'Saca Ordoñez, Keizo Erick',c:'Auditor Senior de Calidad',e:'Sinercorp',d:'71766055',s1:'',s2:'',s3:'',s4:''},
-  {n:'Aquino Meneses, Abraham Raphael',c:'Analista de Importaciones',e:'Sinercorp',d:'71012914',s1:'',s2:'',s3:'',s4:''},
-  {n:'Angulo Aguilar, Carlos Enrique',c:'Analista Jr de Comercio Exterior',e:'Sinercorp',d:'77224885',s1:'',s2:'',s3:'',s4:''},
-  {n:'Medina Requena, Elvis Ruben',c:'Comprador',e:'Sinercorp',d:'45462500',s1:'',s2:'',s3:'',s4:''},
-  {n:'Chang Grillo, Sau Man',c:'Analista de Selección',e:'Tándem',d:'70558701',s1:'',s2:'',s3:'',s4:''},
-  {n:'Quispe Veliz, Yassmin Lucero',c:'Asistente',e:'Tándem',d:'76131689',s1:'',s2:'',s3:'',s4:''},
-  {n:'Gonzales Cardenas, Oscar Maximo',c:'Contador de Impuestos',e:'Tándem',d:'45980183',s1:'',s2:'',s3:'',s4:''},
-  {n:'Pilcon Lozano, Silvia Mirella',c:'Auxiliar de Contabilidad',e:'Tándem',d:'76217934',s1:'',s2:'',s3:'',s4:''},
-  {n:'Cuadros Garay, Susan',c:'Analista Contable',e:'Tándem',d:'41798807',s1:'',s2:'',s3:'',s4:''},
-  {n:'Diaz Collantes, Jose Angeles',c:'Coordinador de Compras',e:'Tándem',d:'40024876',s1:'',s2:'',s3:'',s4:''},
-  {n:'Blas Rodriguez, Luis Fernando',c:'Analista Tributario',e:'Tándem',d:'73211256',s1:'',s2:'',s3:'',s4:''},
-  {n:'Vega Chavez, Juan Carlos',c:'Asistente Administrativo',e:'Tándem',d:'44074228',s1:'',s2:'',s3:'',s4:''},
-  {n:'Pumachoque Sedano, Bryan Ricardo',c:'Analista Contable',e:'Tándem',d:'75996100',s1:'',s2:'',s3:'',s4:''},
-  {n:'Rojas Jehlffer, Diego Oliver',c:'Asistente de Tesorería',e:'Tándem',d:'72508447',s1:'',s2:'',s3:'',s4:''},
-  {n:'Blanco Venites, Zugeidy Mariana',c:'Médico Ocupacional',e:'Tándem',d:'002816077',s1:'',s2:'',s3:'',s4:''},
-  {n:'Diaz Camacho, Raisa Stephany',c:'Analista de Compras',e:'Tándem',d:'47244197',s1:'',s2:'',s3:'',s4:''},
-  {n:'Rios Tito, Luany',c:'Coordinador de Selección',e:'Tándem',d:'72701397',s1:'',s2:'',s3:'',s4:''},
+  {n:'Alvarez Geldres, Nayli Massiele',c:'Asistente Comercial Nacionales',e:'Global Sourcing',d:'74291537',s1:'f',s2:'f',s3:'',s4:''},
+  {n:'Celiz Ocampo, Miguel Angel',c:'Gerente de Ventas',e:'Global Sourcing',d:'06245639',s1:'f',s2:'f',s3:'',s4:''},
+  {n:'Flores Medina, Bryan Paul',c:'Analista Comercial',e:'Lukers',d:'48277997',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Cardenas Cardenas, Andrea Cristina',c:'Practicante de Administración y Proyectos',e:'Lukers',d:'75313669',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Nunura Pupuche, Merly Isabel',c:'Asistente Comercial',e:'Primatex',d:'76981554',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Alva Peramas, Paulo Cesar',c:'KY PP Samitex',e:'Samitex',d:'43501230',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Bendita Mamani, Veronika Cecilia',c:'Auxiliar de Ingeniería',e:'Samitex',d:'40314956',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'De La Cruz Paiva, Alexandra',c:'Liquidador',e:'Samitex',d:'75800617',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Uscubilca Aguilar, Karina',c:'Analista de Calidad',e:'Samitex',d:'70284282',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Juarez Corpus, Jhonatan Alexander',c:'Jefe de Seguridad Corporativo',e:'Sinercorp',d:'42249663',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Avila Huaman, Stephanie Janeth',c:'Analista de Comex',e:'Sinercorp',d:'71385931',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Nuñez Salome, Edson Enrique',c:'Analista Jr de Compras',e:'Sinercorp',d:'75886489',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Quiroz Alfaro, Liliana Milagros',c:'Compradora Institucional',e:'Sinercorp',d:'41202244',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Neira Diaz, Diana Katherina',c:'Asistente / Planeamiento',e:'Sinercorp',d:'43100310',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Yarleque Timana, Hector',c:'Comprador',e:'Sinercorp',d:'25715260',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Saca Ordoñez, Keizo Erick',c:'Auditor Senior de Calidad',e:'Sinercorp',d:'71766055',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Aquino Meneses, Abraham Raphael',c:'Analista de Importaciones',e:'Sinercorp',d:'71012914',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Angulo Aguilar, Carlos Enrique',c:'Analista Jr de Comercio Exterior',e:'Sinercorp',d:'77224885',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Medina Requena, Elvis Ruben',c:'Comprador',e:'Sinercorp',d:'45462500',s1:'j',s2:'a',s3:'',s4:''},
+  {n:'Chang Grillo, Sau Man',c:'Analista de Selección',e:'Tándem',d:'70558701',s1:'f',s2:'a',s3:'',s4:''},
+  {n:'Quispe Veliz, Yassmin Lucero',c:'Asistente',e:'Tándem',d:'76131689',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Gonzales Cardenas, Oscar Maximo',c:'Contador de Impuestos',e:'Tándem',d:'45980183',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Pilcon Lozano, Silvia Mirella',c:'Auxiliar de Contabilidad',e:'Tándem',d:'76217934',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Cuadros Garay, Susan',c:'Analista Contable',e:'Tándem',d:'41798807',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Diaz Collantes, Jose Angeles',c:'Coordinador de Compras',e:'Tándem',d:'40024876',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Blas Rodriguez, Luis Fernando',c:'Analista Tributario',e:'Tándem',d:'73211256',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Vega Chavez, Juan Carlos',c:'Asistente Administrativo',e:'Tándem',d:'44074228',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Pumachoque Sedano, Bryan Ricardo',c:'Analista Contable',e:'Tándem',d:'75996100',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Rojas Jehlffer, Diego Oliver',c:'Asistente de Tesorería',e:'Tándem',d:'72508447',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Blanco Venites, Zugeidy Mariana',c:'Médico Ocupacional',e:'Tándem',d:'002816077',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Diaz Camacho, Raisa Stephany',c:'Analista de Compras',e:'Tándem',d:'47244197',s1:'a',s2:'a',s3:'',s4:''},
+  {n:'Rios Tito, Luany',c:'Coordinador de Selección',e:'Tándem',d:'72701397',s1:'a',s2:'a',s3:'',s4:''},
 ];
 // ── DATOS CURSOS COMPLETADOS ──────────────────────────────
 const PART_INTROIA = [
@@ -1743,25 +1753,30 @@ function exportarExcel() {
   }
   headers.push('Asistencias','% Participación','Estado');
 
-  // Filas de datos — usa PARTICIPANTES en memoria (con cambios del facilitador)
-  const rows = PARTICIPANTES.map((p, idx) => {
+  // Filas de datos — usa los participantes del curso activo (no siempre Grupo 1)
+  const part = getPartActivos();
+  const totalSes = (cfg && cfg.totalSes) ? cfg.totalSes : 4;
+  const rows = part.map((p, idx) => {
     const vals = keySes.slice(0, realizadas).map(k => {
       const v = p[k];
       return v==='a' ? 'Asistió' : v==='f' ? 'Faltó' : v==='j' ? 'Justificado' : 'Faltó';
     });
     const ok = keySes.slice(0, realizadas).filter(k => p[k]==='a'||p[k]==='j').length;
-    const pct = Math.round(ok / realizadas * 100);
-    const estado = pct >= 75 ? 'Aprobado' : 'En riesgo';
-    return [idx+1, p.n, p.c, p.e, p.d, ...vals, ok + '/' + realizadas, pct + '%', estado];
+    const pct = Math.round(ok / totalSes * 100); // % siempre sobre el TOTAL de sesiones del curso
+    let estado;
+    if (realizadas === 0) estado = 'Sin iniciar';
+    else if (realizadas < totalSes) estado = (ok / realizadas >= 0.75) ? 'En progreso' : 'En riesgo';
+    else estado = (pct >= 75) ? 'Aprobado' : 'Desaprobado';
+    return [idx+1, p.n, p.c, p.e, p.d, ...vals, ok + '/' + totalSes, pct + '%', estado];
   });
 
   // Fila de totales con %
   const totRow = ['','TOTAL POR SESIÓN','','',''];
   for (let i = 0; i < realizadas; i++) {
     const k = keySes[i];
-    const t = PARTICIPANTES.filter(p => p[k]==='a'||p[k]==='j').length;
-    const pctT = Math.round(t / PARTICIPANTES.length * 100);
-    totRow.push(t + '/' + PARTICIPANTES.length + ' · ' + pctT + '%');
+    const t = part.filter(p => p[k]==='a'||p[k]==='j').length;
+    const pctT = Math.round(t / part.length * 100);
+    totRow.push(t + '/' + part.length + ' · ' + pctT + '%');
   }
   totRow.push('','','');
   rows.push(totRow);
@@ -1783,7 +1798,7 @@ function exportarExcel() {
   const dd = String(hoy.getDate()).padStart(2,'0');
   const mm = String(hoy.getMonth()+1).padStart(2,'0');
   const yyyy = hoy.getFullYear();
-  XLSX.writeFile(wb, 'UCJ_ClaudeBasico_Asistencia_' + dd + mm + yyyy + '.xlsx');
+  XLSX.writeFile(wb, 'UCJ_' + getCursoActivoId() + '_Asistencia_' + dd + mm + yyyy + '.xlsx');
   autoguardar();
 }
 
@@ -1808,14 +1823,18 @@ function exportarConsolidadoExcel() {
       for (let i = 0; i < totalSes; i++) headers.push('Ses. ' + (i+1) + (fechasSes[i] ? ' (' + fechasSes[i] + ')' : ''));
       headers.push('Asistencias','% Participación','Estado');
 
+      const realizadas = sesionesRealizadas(cfg);
       const rows = cfg.part.map((p, i) => {
         const vals = keySes.slice(0, totalSes).map(k => {
           const v = p[k];
           return v==='a' ? 'Asistió' : v==='j' ? 'Justificado' : v==='f' ? 'Faltó' : 'Sin marcar';
         });
-        const ok = keySes.slice(0, totalSes).filter(k => p[k]==='a'||p[k]==='j').length;
+        const ok = keySes.slice(0, realizadas).filter(k => p[k]==='a'||p[k]==='j').length;
         const pct = totalSes ? Math.round(ok / totalSes * 100) : 0;
-        const estado = pct >= 75 ? 'Aprobado' : 'En riesgo';
+        let estado;
+        if (realizadas === 0) estado = 'Sin iniciar';
+        else if (realizadas < totalSes) estado = (ok / realizadas >= 0.75) ? 'En progreso' : 'En riesgo';
+        else estado = (pct >= 75) ? 'Aprobado' : 'Desaprobado';
         return [i+1, p.n, p.c||'', p.e, p.d, ...vals, ok + '/' + totalSes, pct + '%', estado];
       });
 
@@ -2330,8 +2349,8 @@ function actualizarInfoSesion() {
 }
 
 // Sesiones realizadas = sesiones cuya fecha ya pasó o es hoy
-function sesionesRealizadas() {
-  const cfg = getSesConfig();
+function sesionesRealizadas(cfgOverride) {
+  const cfg = cfgOverride || getSesConfig();
   if (!cfg) return 1;
   if (!cfg.editable) return cfg.totalSes;
 
