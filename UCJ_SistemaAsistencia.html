@@ -160,6 +160,10 @@
   .form-group { margin-bottom: 14px; }
   .form-label { display: block; font-size: 11px; font-weight: 500; color: rgba(242,242,242,0.6); margin-bottom: 5px; }
   .form-input { width: 100%; background: var(--gris-mid); border: 1px solid #444; border-radius: var(--radius); padding: 10px 14px; color: #fff; font-size: 13px; font-family: inherit; }
+  .pass-wrap { position: relative; }
+  .pass-wrap .form-input, .pass-wrap .pass-input { padding-right: 38px; }
+  .pass-eye-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #9ca3af; font-size: 16px; padding: 6px; display: flex; align-items: center; }
+  .pass-eye-btn:hover { color: #6b7280; }
   .form-input:focus { outline: none; border-color: var(--rojo); }
   .form-input::placeholder { color: rgba(242,242,242,0.25); }
   .btn-primary { width: 100%; background: var(--rojo); color: #fff; border: none; padding: 12px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; font-family: inherit; }
@@ -173,6 +177,8 @@
   .cambio-alert { display: flex; align-items: center; gap: 10px; background: rgba(191,23,54,0.15); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 20px; }
   .cambio-alert i { color: var(--rojo); font-size: 18px; }
   .cambio-alert-txt { color: rgba(242,242,242,0.8); font-size: 12px; line-height: 1.5; }
+  body.light-mode .cambio-alert { background: rgba(191,23,54,0.08) !important; }
+  body.light-mode .cambio-alert-txt { color: #1a1a1a !important; }
   .form-hint { font-size: 10px; color: rgba(242,242,242,0.35); margin-top: 4px; }
 
   /* ── ADMIN LAYOUT ── */
@@ -555,7 +561,10 @@
         </div>
         <div class="form-group">
           <label class="form-label">Contraseña</label>
-          <input class="form-input" type="password" id="adm-pass" placeholder="••••••••" />
+          <div class="pass-wrap">
+            <input class="form-input" type="password" id="adm-pass" placeholder="••••••••" />
+            <button type="button" class="pass-eye-btn" tabindex="-1" onclick="togglePassVisibility(this)"><i class="ti ti-eye"></i></button>
+          </div>
         </div>
         <button class="btn-primary" onclick="loginAdmin()">
           <i class="ti ti-arrow-right"></i> Ingresar
@@ -586,12 +595,18 @@
         </div>
         <div class="form-group">
           <label class="form-label">Nueva contraseña</label>
-          <input class="form-input" type="password" id="nueva-pass" placeholder="Mínimo 8 caracteres" />
+          <div class="pass-wrap">
+            <input class="form-input" type="password" id="nueva-pass" placeholder="Mínimo 8 caracteres" />
+            <button type="button" class="pass-eye-btn" tabindex="-1" onclick="togglePassVisibility(this)"><i class="ti ti-eye"></i></button>
+          </div>
           <div class="form-hint" style="color:rgba(242,242,242,0.35);margin-top:4px">⚠ No puede ser igual a tu DNI</div>
         </div>
         <div class="form-group">
           <label class="form-label">Confirmar contraseña</label>
-          <input class="form-input" type="password" id="conf-pass" placeholder="Repite la contraseña" />
+          <div class="pass-wrap">
+            <input class="form-input" type="password" id="conf-pass" placeholder="Repite la contraseña" />
+            <button type="button" class="pass-eye-btn" tabindex="-1" onclick="togglePassVisibility(this)"><i class="ti ti-eye"></i></button>
+          </div>
         </div>
         <button class="btn-primary" onclick="cambiarPassInicial()">
           <i class="ti ti-check"></i> Establecer contraseña y continuar
@@ -892,17 +907,26 @@
               <div id="pass-form-area" style="display:none">
                 <div id="pass-actual-group" class="form-group">
                   <label class="pass-label">Contraseña actual</label>
-                  <input type="password" class="pass-input" placeholder="••••••••" />
+                  <div class="pass-wrap">
+                    <input type="password" class="pass-input" placeholder="••••••••" />
+                    <button type="button" class="pass-eye-btn" tabindex="-1" onclick="togglePassVisibility(this)"><i class="ti ti-eye"></i></button>
+                  </div>
                   <div class="pass-hint"><i class="ti ti-info-circle"></i> Solo requerida para tu propia contraseña</div>
                 </div>
                 <div class="form-group">
                   <label class="pass-label">Nueva contraseña</label>
-                  <input type="password" class="pass-input" placeholder="Mínimo 8 caracteres" />
+                  <div class="pass-wrap">
+                    <input type="password" class="pass-input" placeholder="Mínimo 8 caracteres" />
+                    <button type="button" class="pass-eye-btn" tabindex="-1" onclick="togglePassVisibility(this)"><i class="ti ti-eye"></i></button>
+                  </div>
                   <div class="pass-hint"><i class="ti ti-alert-circle"></i> No puede ser igual al DNI del usuario</div>
                 </div>
                 <div class="form-group">
                   <label class="pass-label">Confirmar nueva contraseña</label>
-                  <input type="password" class="pass-input" placeholder="Repite la contraseña" />
+                  <div class="pass-wrap">
+                    <input type="password" class="pass-input" placeholder="Repite la contraseña" />
+                    <button type="button" class="pass-eye-btn" tabindex="-1" onclick="togglePassVisibility(this)"><i class="ti ti-eye"></i></button>
+                  </div>
                 </div>
                 <hr class="pass-divider">
                 <div class="pass-btns">
@@ -1954,6 +1978,22 @@ renderTarjetasSesiones();
   }
 })();
 
+// ── MOSTRAR/OCULTAR CONTRASEÑA ────────────────────────────
+function togglePassVisibility(btn) {
+  const wrap = btn.closest('.pass-wrap');
+  if (!wrap) return;
+  const input = wrap.querySelector('input');
+  const icon = btn.querySelector('i');
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) { icon.classList.remove('ti-eye'); icon.classList.add('ti-eye-off'); }
+  } else {
+    input.type = 'password';
+    if (icon) { icon.classList.remove('ti-eye-off'); icon.classList.add('ti-eye'); }
+  }
+}
+
 // ── LOGIN ADMIN ──────────────────────────────────────────
 function loginAdmin() {
   const dni = document.getElementById('adm-dni').value.trim();
@@ -2111,8 +2151,8 @@ function abrirDetalleCurso(idx) {
   const cfg = CURSO_CONFIG[idx];
   // Actualizar encabezado del panel detalle
   const c = CURSOS[idx];
-  const tituloEl = document.getElementById('detalle-titulo');
-  const metaEl   = document.getElementById('detalle-meta');
+  const tituloEl = document.getElementById('det-nom');
+  const metaEl   = document.getElementById('det-meta');
   if (tituloEl) tituloEl.textContent = c.nom;
   if (metaEl)   metaEl.textContent   = c.meta + ' · ' + cfg.part.length + ' participantes · ' + c.ses + ' ses. · ' + (c.ses * 2) + ' hrs';
   showPanel('detalle');
