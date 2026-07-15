@@ -663,7 +663,7 @@
           </div>
         </div>
         <div class="sb-bottom">
-          <div class="sb-item sb-item-danger" onclick="confirmarCerrar()">
+          <div class="sb-item sb-item-danger" onclick="confirmarCerrarAdmin()">
             <i class="ti ti-logout"></i> Cerrar sesión
           </div>
         </div>
@@ -1933,7 +1933,57 @@ function exportarConsolidadoExcel() {
     console.warn('Error en exportación consolidada:', e);
   }
 }
+function confirmarCerrarAdmin() {
+  const hoyStr = getFechaHoyLima(); // 'DD/MM'
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const lima = new Date(utc + (-5 * 60) * 60000);
+  const hoyMs = new Date(lima.getFullYear(), lima.getMonth(), lima.getDate()).getTime();
+
+  const enCurso = [];
+  const proximas = [];
+  CURSOS.forEach((c, idx) => {
+    const cfg = CURSO_CONFIG[idx];
+    if (!cfg || !cfg.fechas) return;
+    cfg.fechas.forEach((f, i) => {
+      if (f === hoyStr) { enCurso.push({ nom: c.nom, ses: i + 1, fecha: f }); return; }
+      const [dd, mm] = f.split('/').map(Number);
+      const fMs = new Date(lima.getFullYear(), mm - 1, dd).getTime();
+      if (fMs > hoyMs) proximas.push({ nom: c.nom, ses: i + 1, fecha: f, fMs });
+    });
+  });
+  proximas.sort((a, b) => a.fMs - b.fMs);
+
+  const tituloEl = document.querySelector('#modal-cerrar .modal-titulo');
+  const msgEl = document.querySelector('#modal-cerrar .modal-body');
+  if (tituloEl) tituloEl.innerHTML = '<i class="ti ti-logout" style="color:var(--rojo)"></i> ¿Cerrar sesión?';
+  if (msgEl) msgEl.textContent = 'Este es el estado de los cursos antes de salir.';
+
+  const modalBody = document.getElementById('modal-cerrar-body');
+  if (modalBody) {
+    let html = '';
+    if (enCurso.length) {
+      html += '<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:600;color:#10b981;margin-bottom:4px">● En ejecución hoy</div>';
+      html += enCurso.map(e => `<div style="font-size:11px;color:#333;padding:2px 0;border-bottom:1px solid #f0f0f0">${e.nom} · Sesión ${e.ses} (${e.fecha})</div>`).join('');
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#6b7280;margin-bottom:8px">Ningún curso tiene sesión programada hoy.</div>';
+    }
+    if (proximas.length) {
+      html += '<div><div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px">Próximas sesiones</div>';
+      html += proximas.slice(0, 5).map(e => `<div style="font-size:11px;color:#333;padding:2px 0;border-bottom:1px solid #f0f0f0">${e.nom} · Sesión ${e.ses} (${e.fecha})</div>`).join('');
+      html += '</div>';
+    }
+    modalBody.innerHTML = html;
+  }
+  document.getElementById('modal-cerrar').classList.add('open');
+}
+
 function confirmarCerrar() {
+  const tituloEl = document.querySelector('#modal-cerrar .modal-titulo');
+  const msgEl = document.querySelector('#modal-cerrar .modal-body');
+  if (tituloEl) tituloEl.innerHTML = '<i class="ti ti-logout" style="color:var(--rojo)"></i> ¿Cerrar sesión?';
+  if (msgEl) msgEl.textContent = 'Verifica los participantes con falta o justificado antes de confirmar. Los datos se sincronizan automáticamente con SharePoint.';
   // 6. Convertir vacíos → F en la sesión activa (del curso realmente activo)
   const key = getSesionActivaKey();
   const partActivos = getPartActivos();
@@ -2233,6 +2283,7 @@ function abrirDetalleCurso(idx) {
   showPanel('detalle');
   renderTablaAdmin();
   renderDashboard();
+  actualizarInfoSesion();
 }
 
 function getPartActivos() {
