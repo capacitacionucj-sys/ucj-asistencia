@@ -809,12 +809,8 @@
             <div class="stat-item"><div class="stat-num a" id="dash-bajo">–</div><div class="stat-lbl">Bajo 75%</div></div>
             <div class="stat-item"><div class="stat-num gr" id="dash-pend">2</div><div class="stat-lbl">Pendientes</div></div>
           </div>
-          <div class="ses-prog">
-            <div class="ses-col"><div class="ses-col-head"><span class="ses-fecha">Miérc. 03/06</span><span class="badge-comp">Completa</span></div><div class="ses-pb"><div id="ses-pb1" class="ses-pf" style="width:0%;background:var(--rojo-osc)"></div></div><div class="ses-count" id="ses-count1">–</div></div>
-            <div class="ses-col"><div class="ses-col-head"><span class="ses-fecha">Vier. 05/06</span><span class="badge-comp">Completa</span></div><div class="ses-pb"><div id="ses-pb2" class="ses-pf" style="width:0%;background:var(--rojo-osc)"></div></div><div class="ses-count" id="ses-count2">–</div></div>
-            <div class="ses-col" style="opacity:0.5"><div class="ses-col-head"><span class="ses-fecha">Miérc. 10/06</span><span class="badge-pend">Mañana</span></div><div class="ses-pb"><div class="ses-pf" style="width:0%"></div></div><div class="ses-count">Pendiente</div></div>
-            <div class="ses-col" style="opacity:0.3"><div class="ses-col-head"><span class="ses-fecha">Vier. 12/06</span><span class="badge-pend">Pendiente</span></div><div class="ses-pb"><div class="ses-pf" style="width:0%"></div></div><div class="ses-count">Pendiente</div></div>
-          </div>
+          <!-- BARRA DE SESIONES — dinámica -->
+          <div class="ses-prog" id="ses-prog-admin"></div>
           <div class="toolbar">
             <i class="ti ti-search" style="color:#9ca3af;font-size:14px"></i>
             <input type="text" placeholder="Buscar participante..." oninput="filtrarTablaAdmin(this.value)" />
@@ -1701,9 +1697,15 @@ function renderDashboard() {
   const ds1 = document.getElementById('dash-s1');
   const ds2 = document.getElementById('dash-s2');
   const db  = document.getElementById('dash-bajo');
+  const dp  = document.getElementById('dash-pend');
   if (ds1) ds1.textContent = t1;
   if (ds2) ds2.textContent = t2;
   if (db)  db.textContent  = bajo;
+  if (dp) {
+    const cfgPend = getSesConfig();
+    const totalSesPend = cfgPend ? cfgPend.totalSes : 4;
+    dp.textContent = Math.max(totalSesPend - realizadas, 0);
+  }
 
   const pb1 = document.getElementById('ses-pb1');
   const pb2 = document.getElementById('ses-pb2');
@@ -2310,7 +2312,7 @@ function getInfoProximaSesion() {
   return 'Todas las sesiones han sido completadas.';
 }
 
-function renderTarjetasSesiones() {
+function renderTarjetasSesionesGenerico(containerId, prefix) {
   const cfg = getSesConfig();
   if (!cfg || !cfg.fechas) return;
   const now = new Date();
@@ -2323,13 +2325,13 @@ function renderTarjetasSesiones() {
   const keySes = ['s1','s2','s3','s4'];
 
   // Generar HTML dinámico del dashboard
-  const prog = document.getElementById('ses-prog-fac');
+  const prog = document.getElementById(containerId);
   if (prog) {
     prog.innerHTML = cfg.fechas.map((f, i) => `
-      <div class="ses-col" id="fac-ses-col-${i}">
-        <div class="ses-col-head"><span class="ses-fecha" id="fac-ses-fecha-${i}">–</span><span id="fac-ses-badge-${i}" class="badge-pend">–</span></div>
-        <div class="ses-pb"><div id="fac-pb${i+1}" class="ses-pf" style="width:0%"></div></div>
-        <div class="ses-count" id="fac-count${i+1}">–</div>
+      <div class="ses-col" id="${prefix}-ses-col-${i}">
+        <div class="ses-col-head"><span class="ses-fecha" id="${prefix}-ses-fecha-${i}">–</span><span id="${prefix}-ses-badge-${i}" class="badge-pend">–</span></div>
+        <div class="ses-pb"><div id="${prefix}-pb${i+1}" class="ses-pf" style="width:0%"></div></div>
+        <div class="ses-count" id="${prefix}-count${i+1}">–</div>
       </div>`).join('');
   }
 
@@ -2340,11 +2342,11 @@ function renderTarjetasSesiones() {
     const diaSem = diasSem[new Date(lima.getFullYear(), mm-1, dd).getDay()];
     const key = keySes[i];
 
-    const elFecha = document.getElementById(`fac-ses-fecha-${i}`);
-    const elBadge = document.getElementById(`fac-ses-badge-${i}`);
-    const elCol = document.getElementById(`fac-ses-col-${i}`);
-    const elCount = document.getElementById(`fac-count${i+1}`);
-    const elPb = document.getElementById(`fac-pb${i+1}`);
+    const elFecha = document.getElementById(`${prefix}-ses-fecha-${i}`);
+    const elBadge = document.getElementById(`${prefix}-ses-badge-${i}`);
+    const elCol = document.getElementById(`${prefix}-ses-col-${i}`);
+    const elCount = document.getElementById(`${prefix}-count${i+1}`);
+    const elPb = document.getElementById(`${prefix}-pb${i+1}`);
 
     if (!elFecha) return;
     elFecha.textContent = `${diaSem} ${f}`;
@@ -2382,6 +2384,8 @@ function renderTarjetasSesiones() {
     }
   });
 }
+function renderTarjetasSesiones() { renderTarjetasSesionesGenerico('ses-prog-fac', 'fac'); }
+function renderTarjetasSesionesAdmin() { renderTarjetasSesionesGenerico('ses-prog-admin', 'adm'); }
 
 function actualizarInfoSesion() {
   const info = getInfoProximaSesion();
@@ -2479,6 +2483,7 @@ function renderTablaAdmin(filtro='', estado='') {
   tot.innerHTML = `<td colspan="4">Total por sesión</td><td>${t1}/${total}</td><td>${t2}/${total}</td><td>${hasSes3?t3+'/'+total:'–'}</td><td>${hasSes4?t4+'/'+total:'–'}</td><td>–</td>`;
   tbody.appendChild(tot);
   renderDashboard();
+  renderTarjetasSesionesAdmin();
 }
 
 // ── EDICIÓN ADMIN ─────────────────────────────────────────
