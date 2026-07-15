@@ -1895,17 +1895,18 @@ function exportarConsolidadoExcel() {
   }
 }
 function confirmarCerrar() {
-  // 6. Convertir vacíos → F en la sesión activa
+  // 6. Convertir vacíos → F en la sesión activa (del curso realmente activo)
   const key = getSesionActivaKey();
+  const partActivos = getPartActivos();
   if (key) {
-    PARTICIPANTES.forEach(p => { if (p[key] === '' || p[key] === undefined) p[key] = 'f'; });
+    partActivos.forEach(p => { if (p[key] === '' || p[key] === undefined) p[key] = 'f'; });
     autoguardar();
     renderTablaFac();
   }
 
   // 7. Construir lista de F y J para advertencia
-  const faltaron = key ? PARTICIPANTES.filter(p => p[key] === 'f') : [];
-  const justificados = key ? PARTICIPANTES.filter(p => p[key] === 'j') : [];
+  const faltaron = key ? partActivos.filter(p => p[key] === 'f') : [];
+  const justificados = key ? partActivos.filter(p => p[key] === 'j') : [];
 
   const modalBody = document.getElementById('modal-cerrar-body');
   if (modalBody) {
