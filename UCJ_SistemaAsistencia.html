@@ -127,7 +127,7 @@
   .vista { display: none; flex: 1; }
   .vista.activa { display: flex; flex-direction: column; }
   #v-registro.activa { height: calc(100vh - 52px); overflow-y: auto; }
-  #v-admin.activa { height: calc(100vh - 52px); overflow: hidden; }
+  #v-admin.activa { height: calc(100vh - 52px); }
   .fac-sticky-header { position: sticky; top: 0; z-index: 20; flex-shrink: 0; }
   .fac-registro { flex: 1; display: flex; flex-direction: column; background: #0f0f0f; overflow: hidden; min-height: 0; }
 
@@ -798,7 +798,11 @@
               <div class="det-nom" id="det-nom">Claude Nivel Básico – Grupo 1</div>
               <div class="det-meta" id="det-meta">César Asmat Rabanal · Tándem · 32 participantes · 4 ses. · 8 hrs</div>
             </div>
-            <button class="btn-back" onclick="showPanel('cursos')"><i class="ti ti-arrow-left"></i> Volver a cursos</button>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="sp-status-txt-admin" style="font-size:11px;color:rgba(242,242,242,0.85)">· Sin conexión — trabajando local</span>
+              <button class="btn-sm" id="btn-sp-connect-admin" onclick="conectarSharePoint()" style="background:#0078d4;color:#fff;display:none"><i class="ti ti-cloud"></i> Conectar SharePoint</button>
+              <button class="btn-back" onclick="showPanel('cursos')"><i class="ti ti-arrow-left"></i> Volver a cursos</button>
+            </div>
           </div>
           <div class="aviso-strip">
             <i class="ti ti-info-circle" style="color:#C5EC4C;font-size:14px"></i>
@@ -830,8 +834,6 @@
               <div class="leg-item"><div class="leg-dot r">✗</div>Faltó</div>
               <div class="leg-item"><div class="leg-dot j">J</div>Justificado</div>
             </div>
-            <span id="sp-status-txt-admin" style="font-size:11px;color:#6b7280;margin-right:8px">· Sin conexión — trabajando local</span>
-            <button class="btn-sm" id="btn-sp-connect-admin" onclick="conectarSharePoint()" style="background:#0078d4;color:#fff;display:none"><i class="ti ti-cloud"></i> Conectar SharePoint</button>
             <button class="btn-sm" onclick="abrirModalExport()"><i class="ti ti-download"></i> Exportar Excel</button>
           </div>
           <div class="table-wrap">
