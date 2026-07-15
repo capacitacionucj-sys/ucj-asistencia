@@ -127,6 +127,7 @@
   .vista { display: none; flex: 1; }
   .vista.activa { display: flex; flex-direction: column; }
   #v-registro.activa { height: calc(100vh - 52px); overflow-y: auto; }
+  #v-admin.activa { height: calc(100vh - 52px); overflow: hidden; }
   .fac-sticky-header { position: sticky; top: 0; z-index: 20; flex-shrink: 0; }
   .fac-registro { flex: 1; display: flex; flex-direction: column; background: #0f0f0f; overflow: hidden; min-height: 0; }
 
@@ -829,6 +830,8 @@
               <div class="leg-item"><div class="leg-dot r">✗</div>Faltó</div>
               <div class="leg-item"><div class="leg-dot j">J</div>Justificado</div>
             </div>
+            <span id="sp-status-txt-admin" style="font-size:11px;color:#6b7280;margin-right:8px">· Sin conexión — trabajando local</span>
+            <button class="btn-sm" id="btn-sp-connect-admin" onclick="conectarSharePoint()" style="background:#0078d4;color:#fff;display:none"><i class="ti ti-cloud"></i> Conectar SharePoint</button>
             <button class="btn-sm" onclick="abrirModalExport()"><i class="ti ti-download"></i> Exportar Excel</button>
           </div>
           <div class="table-wrap">
@@ -1203,6 +1206,11 @@ function actualizarEstadoSP() {
   const btn = document.getElementById('btn-sp-connect');
   if (txt) txt.textContent = spConectado ? '· Conectado a SharePoint' : '· Sin conexión — trabajando local';
   if (btn) btn.style.display = spConectado ? 'none' : '';
+  // Indicador + botón en el toolbar de detalle de curso (Admin)
+  const txtAdm = document.getElementById('sp-status-txt-admin');
+  const btnAdm = document.getElementById('btn-sp-connect-admin');
+  if (txtAdm) txtAdm.textContent = spConectado ? '· Conectado a SharePoint' : '· Sin conexión — trabajando local';
+  if (btnAdm) btnAdm.style.display = spConectado ? 'none' : '';
   // Botón del topbar: visible para admin y facilitador, solo si hay sesión iniciada
   const topBtn = document.getElementById('btn-sp-connect-top');
   const topUser = document.getElementById('top-user');
