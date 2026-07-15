@@ -523,6 +523,7 @@
       <button id="btn-theme" onclick="toggleTheme()" title="Cambiar tema" style="background:transparent;border:1px solid rgba(242,242,242,0.25);color:rgba(242,242,242,0.7);padding:5px 10px;border-radius:var(--radius);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;transition:all 0.2s">
         <i class="ti ti-sun" id="theme-icon"></i>
       </button>
+      <button id="btn-sp-connect-top" onclick="conectarSharePoint()" style="display:none;background:#0078d4;border:none;color:#fff;padding:5px 10px;border-radius:var(--radius);font-size:12px;cursor:pointer;align-items:center;gap:5px;font-family:inherit"><i class="ti ti-cloud"></i> Conectar SharePoint</button>
       <span class="top-fecha" id="top-fecha"></span>
       <span class="top-badge" id="top-badge" style="display:none"></span>
       <span class="top-user" id="top-user" style="display:none">
@@ -1205,6 +1206,11 @@ function actualizarEstadoSP() {
   const btn = document.getElementById('btn-sp-connect');
   if (txt) txt.textContent = spConectado ? '· Conectado a SharePoint' : '· Sin conexión — trabajando local';
   if (btn) btn.style.display = spConectado ? 'none' : '';
+  // Botón del topbar: visible para admin y facilitador, solo si hay sesión iniciada
+  const topBtn = document.getElementById('btn-sp-connect-top');
+  const topUser = document.getElementById('top-user');
+  const sesionActiva = topUser && topUser.style.display !== 'none';
+  if (topBtn) topBtn.style.display = (spConectado || !sesionActiva) ? 'none' : 'flex';
 }
 
 // Inicializa MSAL SIN abrir popup — solo revisa si ya hay una cuenta cacheada.
@@ -1227,7 +1233,10 @@ async function initMsal() {
 
 // Login EXPLÍCITO — debe llamarse únicamente desde el onclick de un botón
 // (acquireTokenPopup solo funciona si el navegador lo reconoce como gesto directo del usuario).
+let _spConectando = false;
 async function conectarSharePoint() {
+  if (_spConectando) return; // evita doble intento si el popup ya está abierto
+  _spConectando = true;
   try {
     if (!msalInstance) { msalInstance = new msal.PublicClientApplication(msalConfig); await msalInstance.initialize(); }
     const result = await msalInstance.acquireTokenPopup({ scopes: SP_SCOPES });
@@ -1236,6 +1245,7 @@ async function conectarSharePoint() {
     spConectado = true;
     spSyncActivo = true;
     actualizarEstadoSP();
+    _alertaSPmostrada = false; // acción explícita del usuario: siempre mostrar el resultado
     mostrarAlertaSP('Conectado a SharePoint');
     spGuardarTodos();
     spCargarAsistencia().then(ok => {
@@ -1249,7 +1259,11 @@ async function conectarSharePoint() {
     console.warn('MSAL login error:', e);
     spConectado = false;
     actualizarEstadoSP();
-    mostrarAlertaSP('No se pudo conectar con SharePoint (revisa si el navegador bloqueó el popup)');
+    const detalle = (e && (e.errorCode || e.name)) ? ' [' + (e.errorCode || e.name) + ']' : '';
+    _alertaSPmostrada = false; // acción explícita del usuario: siempre mostrar el resultado
+    mostrarAlertaSP('No se pudo conectar con SharePoint' + detalle + ': ' + ((e && e.message) ? e.message : 'revisa si el navegador bloqueó el popup'));
+  } finally {
+    _spConectando = false;
   }
 }
 
@@ -1635,6 +1649,7 @@ function irInicio() {
   document.getElementById('top-badge').style.display = 'none';
   document.getElementById('top-user').style.display = 'none';
   document.getElementById('btn-cerrar-top').style.display = 'none';
+  document.getElementById('btn-sp-connect-top').style.display = 'none';
   ir('v-inicio');
 }
 function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -2082,6 +2097,7 @@ function abrirAdmin(dni) {
   document.getElementById('top-user').style.display = 'flex';
   document.getElementById('top-user-txt').textContent = adm.nombre;
   document.getElementById('btn-cerrar-top').style.display = 'flex';
+  document.getElementById('btn-sp-connect-top').style.display = spConectado ? 'none' : 'flex';
   document.getElementById('sb-avatar').textContent = adm.iniciales;
   document.getElementById('sb-nombre').textContent = adm.nombre;
   document.getElementById('sb-rol').textContent = adm.rol;
@@ -2499,11 +2515,30 @@ function buscarParticipante() {
   const q = document.getElementById('busca-part').value.toLowerCase().trim();
   const res = document.getElementById('part-resultado');
   if (q.length < 2) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">Escribe al menos 2 caracteres para buscar.</div>'; return; }
-  const found = PARTICIPANTES.filter(p => p.n.toLowerCase().includes(q) || p.d.includes(q));
+
+  // Buscar en TODOS los cursos (no solo Grupo 1), agrupando resultados por DNI
+  const porDni = {};
+  Object.keys(CURSO_CONFIG).forEach(idx => {
+    const cfg = CURSO_CONFIG[idx];
+    const nomCurso = (CURSOS[idx] && CURSOS[idx].nom) || `Curso ${idx}`;
+    (cfg.part || []).forEach(p => {
+      if (!(p.n.toLowerCase().includes(q) || p.d.includes(q))) return;
+      if (!porDni[p.d]) porDni[p.d] = { n: p.n, c: p.c, e: p.e, d: p.d, cursos: [] };
+      const totalSes = cfg.totalSes || 4;
+      const vals = [p.s1, p.s2, p.s3, p.s4].slice(0, totalSes);
+      const ok = vals.filter(v => v==='a'||v==='j').length;
+      const pct = Math.round(ok / totalSes * 100);
+      const cls = pct>=75?'ok':pct>=50?'warn':'bad';
+      porDni[p.d].cursos.push({ nom: nomCurso, pct, cls });
+    });
+  });
+
+  const found = Object.values(porDni);
   if (!found.length) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">No se encontraron resultados.</div>'; return; }
+
   res.innerHTML = found.map(p => {
     const ini = p.n.split(' ').slice(0,2).map(x=>x[0]).join('');
-    const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
+    const filas = p.cursos.map(c => `<div class="part-curso-row"><span class="part-curso-nom">${c.nom}</span><span class="pct-num ${c.cls}">${c.pct}%</span></div>`).join('');
     return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:var(--radius-lg);padding:16px;margin-bottom:10px">
       <div class="part-header">
         <div class="part-avatar">${ini}</div>
@@ -2511,8 +2546,7 @@ function buscarParticipante() {
       </div>
       <div style="font-size:12px;font-weight:500;color:#374151;margin-bottom:8px">Historial de cursos InnovAcción 2026:</div>
       <div class="part-cursos">
-        <div class="part-curso-row"><span class="part-curso-nom">Claude Nivel Básico – Grupo 1</span><span class="pct-num ${cls}">${pct}%</span></div>
-        <div class="part-curso-row" style="color:#9ca3af"><span class="part-curso-nom" style="color:#9ca3af">Otros cursos no disponibles en esta vista</span></div>
+        ${filas}
       </div>
     </div>`;
   }).join('');
@@ -2603,6 +2637,7 @@ function loginFacilitador() {
       document.getElementById('top-user').style.display = 'flex';
       document.getElementById('top-user-txt').textContent = 'Asmat Rabanal, César · Facilitador';
       document.getElementById('btn-cerrar-top').style.display = 'flex';
+      document.getElementById('btn-sp-connect-top').style.display = spConectado ? 'none' : 'flex';
       // Hora Lima (UTC-5)
       const now = new Date();
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
