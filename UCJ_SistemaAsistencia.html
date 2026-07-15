@@ -1113,10 +1113,10 @@
       <div class="modal-titulo"><i class="ti ti-download" style="color:var(--rojo)"></i> Confirmar exportación</div>
       <div class="modal-body">Estás a punto de exportar el registro. El archivo se guardará también en SharePoint automáticamente.</div>
       <div class="modal-resumen">
-        <div class="modal-row">Curso <span>Claude Nivel Básico – Grupo 1</span></div>
-        <div class="modal-row">Participantes <span>32</span></div>
-        <div class="modal-row">Sesiones registradas <span>2 de 4</span></div>
-        <div class="modal-row">Sesiones pendientes <span style="color:#d97706">2 (10/06 y 12/06)</span></div>
+        <div class="modal-row">Curso <span id="modal-exp-curso">–</span></div>
+        <div class="modal-row">Participantes <span id="modal-exp-part">–</span></div>
+        <div class="modal-row">Sesiones registradas <span id="modal-exp-reg">–</span></div>
+        <div class="modal-row">Sesiones pendientes <span id="modal-exp-pend">–</span></div>
         <div class="modal-row">Destino <span style="color:#0078d4">SharePoint · InnovAcción 2026</span></div>
       </div>
       <div class="modal-btns">
@@ -1653,7 +1653,33 @@ function irInicio() {
   ir('v-inicio');
 }
 function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
-function abrirModalExport() { document.getElementById('modal-export').classList.add('open'); }
+function abrirModalExport() {
+  const cfg = getSesConfig();
+  const part = getPartActivos();
+  const cursoNom = (CURSOS[cursoActivoIdx] && CURSOS[cursoActivoIdx].nom) || '';
+  const totalSes = cfg ? cfg.totalSes : 4;
+  const realizadas = sesionesRealizadas(cfg);
+  const pendientes = Math.max(totalSes - realizadas, 0);
+  const fechasPend = (cfg && cfg.fechas) ? cfg.fechas.slice(realizadas) : [];
+
+  const elCurso = document.getElementById('modal-exp-curso');
+  const elPart = document.getElementById('modal-exp-part');
+  const elReg = document.getElementById('modal-exp-reg');
+  const elPend = document.getElementById('modal-exp-pend');
+  if (elCurso) elCurso.textContent = cursoNom;
+  if (elPart) elPart.textContent = part.length;
+  if (elReg) elReg.textContent = realizadas + ' de ' + totalSes;
+  if (elPend) {
+    if (pendientes > 0) {
+      elPend.textContent = pendientes + ' (' + fechasPend.join(' y ') + ')';
+      elPend.style.color = '#d97706';
+    } else {
+      elPend.textContent = 'Ninguna';
+      elPend.style.color = '#10b981';
+    }
+  }
+  document.getElementById('modal-export').classList.add('open');
+}
 
 // ── RENDER DASHBOARD (stats dinámicos) ──────────────────
 function renderDashboard() {
