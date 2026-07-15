@@ -1301,7 +1301,7 @@ async function spGuardarParticipante(p) {
     const listUrl = SP_SITE + "/_api/web/lists/getbytitle('" + SP_LIST_ASIST + "')/items";
     
     // Buscar si existe
-    const searchResp = await fetch(listUrl + "?=Title eq '" + titulo + "'&=Id", {
+    const searchResp = await fetch(listUrl + "?$filter=Title eq '" + titulo + "'&$select=Id", {
       headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata' }
     });
     const searchData = await searchResp.json();
@@ -1331,6 +1331,8 @@ async function spGuardarParticipante(p) {
   } catch(e) {
     console.warn('SP Guardar error:', e);
     spSyncActivo = false;
+    spConectado = false;
+    actualizarEstadoSP();
     mostrarAlertaSP('Sin conexión a SharePoint. Los datos se guardan localmente.');
   }
 }
@@ -1379,6 +1381,8 @@ async function spCargarAsistencia() {
   } catch(e) {
     console.warn('SP Cargar error:', e);
     spSyncActivo = false;
+    spConectado = false;
+    actualizarEstadoSP();
     return false;
   }
 }
