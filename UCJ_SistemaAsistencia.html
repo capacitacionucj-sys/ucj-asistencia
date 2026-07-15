@@ -329,6 +329,7 @@
 
   /* ── TABLA ── */
   .table-wrap { flex: 1; overflow: auto; }
+  #panel-detalle .table-wrap { min-height: 0; }
   table { width: 100%; border-collapse: collapse; }
   thead tr { background: var(--negro); position: sticky; top: 0; z-index: 2; }
   /* Columna sesión activa resaltada */
@@ -2490,7 +2491,7 @@ function renderTablaAdmin(filtro='', estado='') {
 let _admEditPendiente = null; // {idx, sesNum, nuevoEstado}
 
 function rotarAdmin(idx, sesNum) {
-  const p = PARTICIPANTES[idx];
+  const p = getPartActivos()[idx];
   const keys = ['s1','s2','s3','s4'];
   const key = keys[sesNum-1];
   const orden = ['','a','f','j'];
@@ -2521,12 +2522,13 @@ function confirmarMotivoAdmin() {
   document.getElementById('modal-motivo-err').style.display='none';
   if (_admEditPendiente) {
     const { idx, key, nuevoEstado } = _admEditPendiente;
-    PARTICIPANTES[idx][key] = nuevoEstado;
+    const partAdm = getPartActivos();
+    partAdm[idx][key] = nuevoEstado;
     // Registrar en auditoría local y SharePoint
-    const entry = { accion: 'modificacion_admin', usuario: dniActual, timestamp: new Date().toISOString(), motivo, participante: PARTICIPANTES[idx].n, sesion: key, estado: nuevoEstado };
+    const entry = { accion: 'modificacion_admin', usuario: dniActual, timestamp: new Date().toISOString(), motivo, participante: partAdm[idx].n, sesion: key, estado: nuevoEstado };
     console.log('Auditoría:', entry);
-    spRegistrarAuditoria('modificacion_admin - ' + PARTICIPANTES[idx].n + ' → ' + nuevoEstado, key, motivo);
-    spGuardarParticipante(PARTICIPANTES[idx]);
+    spRegistrarAuditoria('modificacion_admin - ' + partAdm[idx].n + ' → ' + nuevoEstado, key, motivo);
+    spGuardarParticipante(partAdm[idx]);
     _admEditPendiente = null;
   }
   cerrarModal('modal-motivo');
