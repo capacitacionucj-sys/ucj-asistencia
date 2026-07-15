@@ -1290,20 +1290,21 @@ async function getSpToken() {
   }
 }
 
-// Guardar UN participante en SharePoint via REST API
+// Guardar UN participante en SharePoint via REST API. Devuelve true/false según el resultado real.
 async function spGuardarParticipante(p) {
-  if (!spSyncActivo) return;
+  if (!spSyncActivo) return false;
   try {
     const token = await getSpToken();
-    if (!token) return;
+    if (!token) return false;
     const cursoID = getCursoActivoId();
     const titulo = cursoID + '_' + p.d;
     const listUrl = SP_SITE + "/_api/web/lists/getbytitle('" + SP_LIST_ASIST + "')/items";
-    
+
     // Buscar si existe
     const searchResp = await fetch(listUrl + "?$filter=Title eq '" + titulo + "'&$select=Id", {
       headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata' }
     });
+    if (!searchResp.ok) throw new Error('Búsqueda HTTP ' + searchResp.status);
     const searchData = await searchResp.json();
     const body = {
       Title: titulo, CursoID: cursoID, DNI: p.d,
@@ -1312,28 +1313,35 @@ async function spGuardarParticipante(p) {
       UltimaActualizacion: new Date().toISOString(),
       ActualizadoPor: dniActual || 'sistema'
     };
+    let saveResp;
     if (searchData.value && searchData.value.length > 0) {
       // Actualizar
       const id = searchData.value[0].Id;
-      await fetch(listUrl + '(' + id + ')', {
+      saveResp = await fetch(listUrl + '(' + id + ')', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata', 'X-HTTP-Method': 'MERGE', 'If-Match': '*' },
         body: JSON.stringify(body)
       });
     } else {
       // Crear
-      await fetch(listUrl, {
+      saveResp = await fetch(listUrl, {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata' },
         body: JSON.stringify(body)
       });
     }
+    if (!saveResp.ok) {
+      let detalle = '';
+      try {
+        const errJson = await saveResp.json();
+        detalle = errJson && errJson['odata.error'] && errJson['odata.error'].message ? errJson['odata.error'].message.value : '';
+      } catch(e2) {}
+      throw new Error('Guardado HTTP ' + saveResp.status + (detalle ? ' - ' + detalle : ''));
+    }
+    return true;
   } catch(e) {
-    console.warn('SP Guardar error:', e);
-    spSyncActivo = false;
-    spConectado = false;
-    actualizarEstadoSP();
-    mostrarAlertaSP('Sin conexión a SharePoint. Los datos se guardan localmente.');
+    console.warn('SP Guardar error [DNI ' + p.d + ']:', (e && e.message) ? e.message : e);
+    return false;
   }
 }
 
@@ -1342,11 +1350,24 @@ function getCursoActivoId() {
   return nombres[cursoActivoIdx] || 'CLAUDE_BASICO_G1';
 }
 
-// Guardar TODOS los participantes en SharePoint
+// Guardar TODOS los participantes en SharePoint, en lotes pequeños para evitar throttling
 async function spGuardarTodos() {
   if (!spSyncActivo) return;
   const part = getPartActivos();
-  await Promise.all(part.map(p => spGuardarParticipante(p)));
+  if (!part.length) return;
+  const LOTE = 4;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < part.length; i += LOTE) {
+    const grupo = part.slice(i, i + LOTE);
+    const resultados = await Promise.all(grupo.map(p => spGuardarParticipante(p)));
+    resultados.forEach(r => { if (r) ok++; else fail++; });
+    if (i + LOTE < part.length) await new Promise(res => setTimeout(res, 400));
+  }
+  if (fail > 0) {
+    mostrarToastSP('SharePoint: ' + ok + '/' + part.length + ' guardados. ' + fail + ' fallaron (ver consola F12).', true);
+  } else {
+    mostrarToastSP('SharePoint: ' + ok + '/' + part.length + ' participantes guardados correctamente.', false);
+  }
 }
 
 // Cargar asistencia desde SharePoint
@@ -1410,6 +1431,17 @@ function mostrarAlertaSP(msg) {
   const div = document.createElement('div');
   div.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#92400e;color:#fef3c7;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4)';
   div.textContent = '⚠️ ' + msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 6000);
+}
+
+// Toast de resumen de guardado en SharePoint (siempre se muestra, no usa el gate de una sola vez)
+function mostrarToastSP(msg, esError) {
+  const div = document.createElement('div');
+  const bg = esError ? '#92400e' : '#065f46';
+  const fg = esError ? '#fef3c7' : '#d1fae5';
+  div.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:' + bg + ';color:' + fg + ';padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4)';
+  div.textContent = (esError ? '⚠️ ' : '✅ ') + msg;
   document.body.appendChild(div);
   setTimeout(() => div.remove(), 6000);
 }
