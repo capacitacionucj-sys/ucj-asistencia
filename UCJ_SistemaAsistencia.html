@@ -3735,6 +3735,13 @@ function loginFacilitador() {
       renderTablaFac();
       ir('v-registro');
       iniciarInactividad();
+      spCargarAsistencia().then(ok => {
+        if (ok) {
+          lsGuardarAsist();
+          renderTablaFac();
+          if (typeof renderRegistro === 'function') renderRegistro();
+        }
+      });
     } else {
       err.style.display = 'block';
     }
