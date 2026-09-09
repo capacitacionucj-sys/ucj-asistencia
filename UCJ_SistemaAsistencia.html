@@ -190,6 +190,14 @@
   body.light-mode .sb-item:hover { background: #f3f4f6 !important; color: #1a1a1a !important; }
   body.light-mode .sb-item.activo { background: rgba(191,23,54,0.08) !important; color: var(--rojo) !important; }
   body.light-mode .sb-bottom { border-top-color: #e5e7eb !important; }
+  /* Textos que usan var(--negro) para letras sobre tarjetas blancas: en modo día
+     ese token se invierte a un gris casi blanco y el texto se vuelve ilegible. */
+  body.light-mode .alert-nom, body.light-mode .dash-card-tit, body.light-mode .kpi-valor,
+  body.light-mode .curso-mini-nom, body.light-mode .curso-card-nom, body.light-mode tbody td,
+  body.light-mode .adm-nom, body.light-mode .pass-titulo, body.light-mode .part-nom,
+  body.light-mode .part-curso-nom, body.light-mode .modal-titulo, body.light-mode .modal-row span,
+  body.light-mode .audit-usuario, body.light-mode .btn-nuevo { color: #1a1a1a !important; }
+  body.light-mode .alert-meta { color: #6b7280 !important; }
   .form-hint { font-size: 10px; color: rgba(242,242,242,0.35); margin-top: 4px; }
 
   /* ── ADMIN LAYOUT ── */
@@ -272,6 +280,10 @@
   .det-nom { color: #fff; font-size: 14px; font-weight: 500; }
   .det-meta { color: rgba(242,242,242,0.8); font-size: 11px; margin-top: 2px; }
   .btn-back { background: transparent; color: rgba(242,242,242,0.8); border: 1px solid rgba(242,242,242,0.3); padding: 5px 12px; border-radius: var(--radius); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: inherit; }
+  .btn-icon-edit { background: transparent; border: 1px solid #d1d5db; color: #6b7280; width: 26px; height: 26px; border-radius: var(--radius); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .btn-icon-edit:hover { background: #f3f4f6; color: var(--rojo); border-color: var(--rojo); }
+  .det-header .btn-sm { background: transparent; color: rgba(242,242,242,0.85); border: 1px solid rgba(242,242,242,0.35); }
+  .det-header .btn-sm:hover { background: rgba(242,242,242,0.12); }
   .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
   .fac-strip { background: var(--gris-dark); border-left: 4px solid var(--rojo-osc); padding: 8px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .fac-strip-txt { font-size: 11px; color: rgba(242,242,242,0.7); }
@@ -534,7 +546,7 @@
       <span class="top-user" id="top-user" style="display:none">
         <i class="ti ti-user-circle"></i> <span id="top-user-txt"></span>
       </span>
-      <button class="btn-top-cerrar" id="btn-cerrar-top" style="display:none" onclick="confirmarCerrar()">
+      <button class="btn-top-cerrar" id="btn-cerrar-top" style="display:none" onclick="confirmarCerrarTop()">
         <i class="ti ti-logout"></i> Cerrar sesión
       </button>
     </div>
@@ -790,7 +802,7 @@
             <span id="info-proxima-ses-admin"></span>
           </div>
           <div class="stats-strip">
-            <div class="stat-item"><div class="stat-num g">32</div><div class="stat-lbl">Participantes</div></div>
+            <div class="stat-item"><div class="stat-num g" id="dash-part-total">–</div><div class="stat-lbl">Participantes</div></div>
             <div class="stat-item"><div class="stat-num g" id="dash-s1">–</div><div class="stat-lbl">Asistieron S1</div></div>
             <div class="stat-item"><div class="stat-num g" id="dash-s2">–</div><div class="stat-lbl">Asistieron S2</div></div>
             <div class="stat-item"><div class="stat-num a" id="dash-bajo">–</div><div class="stat-lbl">Bajo 75%</div></div>
@@ -821,14 +833,15 @@
             <table class="dark-table" id="tabla-admin">
               <thead><tr>
                 <th style="width:28px">#</th>
-                <th>Apellidos y nombres</th>
-                <th>Empresa</th>
+                <th style="cursor:pointer;user-select:none" onclick="ordenarTablaAdmin('nombre')">Apellidos y nombres <span id="ord-ic-nombre"></span></th>
+                <th style="cursor:pointer;user-select:none" onclick="ordenarTablaAdmin('empresa')">Empresa <span id="ord-ic-empresa"></span></th>
                 <th>DNI</th>
                 <th class="c th-ses">03/06</th>
                 <th class="c th-ses">05/06</th>
                 <th class="c th-ses bloq">10/06</th>
                 <th class="c th-ses bloq">12/06</th>
-                <th class="c" style="min-width:75px">% Asist.</th>
+                <th class="c" style="min-width:75px;cursor:pointer;user-select:none" onclick="ordenarTablaAdmin('pct')">% Asist. <span id="ord-ic-pct"></span></th>
+              <th style="width:34px"></th>
               </tr></thead>
               <tbody id="tbody-admin"></tbody>
             </table>
@@ -927,18 +940,13 @@
         <!-- AUDITORÍA -->
         <div class="panel" id="panel-audit">
           <div class="sec-header">
-            <div><div class="sec-titulo">Registro de auditoría</div><div class="sec-sub">Historial de acciones en el sistema · Microsoft Lists</div></div>
+            <div><div class="sec-titulo">Registro de auditoría</div><div class="sec-sub">Historial de acciones en el sistema · Google Sheets</div></div>
+            <button class="btn-sm" onclick="cargarAuditoriaReal()"><i class="ti ti-refresh"></i> Actualizar</button>
           </div>
           <div class="audit-body">
             <div class="audit-table">
               <div class="audit-hdr"><span>Fecha y hora</span><span>Usuario</span><span>Acción</span><span>Tipo</span></div>
-              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:17 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Habilitó registro sesión 3 · Claude Básico Gpo. 1</span><span><span class="audit-badge audit-login">Login facilitador</span></span></div>
-              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:17 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Marcó asistencia: Acuña Godoy → Asistió (03/06)</span><span><span class="audit-badge audit-asist">Asistencia</span></span></div>
-              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:18 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Marcó asistencia: Atoche Arévalo → Faltó (05/06)</span><span><span class="audit-badge audit-asist">Asistencia</span></span></div>
-              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:19 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Exportó Excel de asistencia · Claude Básico Gpo. 1</span><span><span class="audit-badge audit-export">Exportación</span></span></div>
-              <div class="audit-row"><span class="audit-fecha">09/06/2026 02:15 pm</span><span class="audit-usuario">Yllescas C., Maria del Carmen</span><span class="audit-accion">Ingresó al sistema como administrador</span><span><span class="audit-badge audit-login">Login admin</span></span></div>
-              <div class="audit-row"><span class="audit-fecha">05/06/2026 05:33 pm</span><span class="audit-usuario">Asmat R., César</span><span class="audit-accion">Habilitó registro sesión 2 · Claude Básico Gpo. 1</span><span><span class="audit-badge audit-login">Login facilitador</span></span></div>
-              <div class="audit-row"><span class="audit-fecha">00:00 backup</span><span class="audit-usuario">Power Automate</span><span class="audit-accion">Backup automático guardado en SharePoint</span><span><span class="audit-badge audit-export">Backup</span></span></div>
+              <div id="audit-filas"><div style="padding:12px;color:#9ca3af;font-size:12px">Cargando...</div></div>
             </div>
           </div>
         </div>
@@ -1111,7 +1119,7 @@
       <div id="modal-cerrar-body" style="max-height:240px;overflow-y:auto;background:#f9f9f9;border:1px solid #e5e7eb;border-radius:var(--radius);padding:10px;margin-bottom:12px;font-size:12px"></div>
       <div class="modal-btns">
         <button class="btn-modal-cancel" onclick="cerrarModal('modal-cerrar')">Cancelar</button>
-        <button class="btn-modal-ok" onclick="cerrarSesion()"><i class="ti ti-logout"></i> Confirmar y cerrar sesión</button>
+        <button class="btn-modal-ok" onclick="rolSesionActual==='admin' ? cerrarSesionAdmin() : cerrarSesion()"><i class="ti ti-logout"></i> Confirmar y cerrar sesión</button>
       </div>
     </div>
   </div>
@@ -1155,6 +1163,23 @@
       <div class="modal-btns">
         <button class="btn-modal-cancel" onclick="cerrarModal('modal-agregar-participantes')">Cancelar</button>
         <button class="btn-modal-ok" onclick="guardarParticipantesAgregados()"><i class="ti ti-check"></i> Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-editar-participante">
+    <div class="modal-card" style="max-width:460px">
+      <div class="modal-titulo"><i class="ti ti-edit" style="color:var(--rojo)"></i> Editar participante</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:10px 0">
+        <div><label class="adm-form-label">Apellidos y nombres</label><input class="adm-form-input" type="text" id="ep-nombre"/></div>
+        <div><label class="adm-form-label">Cargo</label><input class="adm-form-input" type="text" id="ep-cargo"/></div>
+        <div><label class="adm-form-label">Empresa</label><input class="adm-form-input" type="text" id="ep-empresa"/></div>
+        <div style="font-size:11px;color:#6b7280">DNI: <span id="ep-dni" style="font-family:monospace"></span> (no editable, es el identificador del participante)</div>
+      </div>
+      <div id="ep-error" style="display:none;color:var(--rojo);font-size:11px;margin-bottom:6px"></div>
+      <div class="modal-btns">
+        <button class="btn-modal-cancel" onclick="cerrarModal('modal-editar-participante')">Cancelar</button>
+        <button class="btn-modal-ok" onclick="guardarEdicionParticipante()"><i class="ti ti-check"></i> Guardar</button>
       </div>
     </div>
   </div>
@@ -1511,6 +1536,7 @@ try {
 
 const FAC_DNI = '18168534';
 let dniActual = '';
+let rolSesionActual = ''; // 'admin' | 'facilitador'
 
 const CURSOS = [
   { nom:'Claude Nivel Básico – Grupo 1', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:4, estado:'Completo', fecha:'Jun 2026', anio:'2026', mes:'Jun' },
@@ -1840,6 +1866,8 @@ function renderDashboard() {
   const ds2 = document.getElementById('dash-s2');
   const db  = document.getElementById('dash-bajo');
   const dp  = document.getElementById('dash-pend');
+  const dTotal = document.getElementById('dash-part-total');
+  if (dTotal) dTotal.textContent = getPartActivos().length;
   if (ds1) ds1.textContent = t1;
   if (ds2) ds2.textContent = t2;
   if (db)  db.textContent  = bajo;
@@ -2068,6 +2096,11 @@ function exportarConsolidadoExcel() {
     console.warn('Error en exportación consolidada:', e);
   }
 }
+function confirmarCerrarTop() {
+  if (rolSesionActual === 'admin') { confirmarCerrarAdmin(); return; }
+  confirmarCerrar();
+}
+
 function confirmarCerrarAdmin() {
   const hoyStr = getFechaHoyLima(); // 'DD/MM'
   const now = new Date();
@@ -2160,6 +2193,19 @@ function cerrarSesion() {
   clearTimeout(countdownTimer);
   document.getElementById('timeout-banner').classList.remove('show');
   dniActual = '';
+  irInicio();
+}
+
+// Cierre de sesión para Administrador: NO marca faltas ni fuerza guardado de asistencia,
+// solo cierra la sesión de forma segura.
+function cerrarSesionAdmin() {
+  detenerPollingAsistencia();
+  cerrarModal('modal-cerrar');
+  clearTimeout(inactivityTimer);
+  clearTimeout(countdownTimer);
+  document.getElementById('timeout-banner').classList.remove('show');
+  dniActual = '';
+  rolSesionActual = '';
   irInicio();
 }
 
@@ -2317,6 +2363,7 @@ function cambiarPassInicial() {
 
 function abrirAdmin(dni) {
   const adm = ADMINS[dni];
+  rolSesionActual = 'admin';
   document.getElementById('top-badge').textContent = 'Administrador';
   document.getElementById('top-badge').className = 'top-badge badge-adm';
   document.getElementById('top-badge').style.display = 'inline-block';
@@ -2372,6 +2419,49 @@ function showPanel(p) {
   const nav = document.getElementById('nav-' + p);
   if (nav) nav.classList.add('activo');
   if (p === 'detalle') iniciarPollingAsistencia(); else detenerPollingAsistencia();
+  if (p === 'dashboard') refrescarDashboardDesdeSheets();
+  if (p === 'audit') cargarAuditoriaReal();
+}
+
+// Trae la asistencia real de Google Sheets para TODOS los cursos (no solo el curso
+// activo por defecto), para que el Dashboard de Administrador siempre refleje lo real.
+async function cargarAuditoriaReal() {
+  const cont = document.getElementById('audit-filas');
+  if (!cont) return;
+  if (!spConectado) {
+    cont.innerHTML = '<div style="padding:12px;color:#9ca3af;font-size:12px">Conéctate a Google Sheets para ver el historial real.</div>';
+    return;
+  }
+  try {
+    const resp = await fetch(SHEETS_API_URL + '?action=cargarAuditoria&limite=60');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Error desconocido');
+    const items = data.items || [];
+    if (!items.length) {
+      cont.innerHTML = '<div style="padding:12px;color:#9ca3af;font-size:12px">Sin registros de auditoría todavía.</div>';
+      return;
+    }
+    cont.innerHTML = items.map(it => {
+      const fecha = it.fechaHora ? new Date(it.fechaHora).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' }) : '–';
+      const accionTxt = (it.accion || '') + (it.cursoID ? (' · ' + it.cursoID) : '') + (it.sesion ? (' (Sesión ' + it.sesion + ')') : '') + (it.motivo ? (' — ' + it.motivo) : '');
+      const tipoClase = it.accion === 'login_admin' ? 'audit-login' : it.accion === 'login_facilitador' ? 'audit-login' : it.accion === 'exportacion' ? 'audit-export' : 'audit-asist';
+      const tipoTxt = it.accion === 'login_admin' ? 'Login admin' : it.accion === 'login_facilitador' ? 'Login facilitador' : it.accion === 'exportacion' ? 'Exportación' : 'Asistencia';
+      return `<div class="audit-row"><span class="audit-fecha">${fecha}</span><span class="audit-usuario">${it.realizadoPor || '–'}</span><span class="audit-accion">${accionTxt}</span><span><span class="audit-badge ${tipoClase}">${tipoTxt}</span></span></div>`;
+    }).join('');
+  } catch(e) {
+    cont.innerHTML = '<div style="padding:12px;color:var(--rojo);font-size:12px">No se pudo cargar la auditoría: ' + (e.message||'error') + '</div>';
+  }
+}
+
+async function refrescarDashboardDesdeSheets() {
+  if (!spConectado) { renderDashboardKPIs(); return; }
+  const prevIdx = cursoActivoIdx;
+  for (let i = 0; i < CURSOS.length; i++) {
+    cursoActivoIdx = i;
+    await spCargarAsistencia();
+  }
+  cursoActivoIdx = prevIdx;
+  renderDashboardKPIs();
 }
 
 function renderCursos(filtro='', anio='2026', mes='') {
@@ -2636,7 +2726,19 @@ function renderTablaAdmin(filtro='', estado='') {
     cfg.fechas.forEach((f, i) => { if (thSes[i]) thSes[i].textContent = f; });
     for (let i = cfg.fechas.length; i < 4; i++) { if (thSes[i]) thSes[i].textContent = '–'; }
   }
-  part.forEach((p, i) => {
+  let partOrdenado = part;
+  if (_ordenAdminKey) {
+    partOrdenado = [...part].sort((a, b) => {
+      let cmp = 0;
+      if (_ordenAdminKey === 'nombre') cmp = a.n.localeCompare(b.n, 'es');
+      else if (_ordenAdminKey === 'empresa') cmp = a.e.localeCompare(b.e, 'es');
+      else if (_ordenAdminKey === 'pct') cmp = pctInfo(a.s1,a.s2,a.s3,a.s4).pct - pctInfo(b.s1,b.s2,b.s3,b.s4).pct;
+      return _ordenAdminDir === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  partOrdenado.forEach((p) => {
+    const i = part.indexOf(p);
     const q = filtro.toLowerCase();
     if (q && !p.n.toLowerCase().includes(q) && !p.e.toLowerCase().includes(q) && !p.d.includes(q)) return;
     const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
@@ -2666,6 +2768,7 @@ function renderTablaAdmin(filtro='', estado='') {
       <td style="font-size:11px;font-family:monospace;color:#6b7280">${p.d}</td>`;
     tr.innerHTML += mkAdm(p.s1,i,1) + mkAdm(p.s2,i,2) + mkAdm(p.s3,i,3) + mkAdm(p.s4,i,4);
     tr.innerHTML += `<td class="pct-cell"><div class="pct-num ${cls}">${pct}%</div><div class="pct-bar ${cls}" style="width:${pct}%"></div></td>`;
+    tr.innerHTML += `<td style="text-align:center"><button class="btn-icon-edit" onclick="abrirModalEditarParticipante(${i})" title="Editar datos del participante"><i class="ti ti-pencil"></i></button></td>`;
     tbody.appendChild(tr);
   });
   // Totales dinámicos
@@ -2678,13 +2781,36 @@ function renderTablaAdmin(filtro='', estado='') {
   const t4 = part.filter(p=>p.s4==='a'||p.s4==='j').length;
   const hasSes3 = cfg.totalSes >= 3;
   const hasSes4 = cfg.totalSes >= 4;
-  tot.innerHTML = `<td colspan="4">Total por sesión</td><td>${t1}/${total}</td><td>${t2}/${total}</td><td>${hasSes3?t3+'/'+total:'–'}</td><td>${hasSes4?t4+'/'+total:'–'}</td><td>–</td>`;
+  tot.innerHTML = `<td colspan="4">Total por sesión</td><td>${t1}/${total}</td><td>${t2}/${total}</td><td>${hasSes3?t3+'/'+total:'–'}</td><td>${hasSes4?t4+'/'+total:'–'}</td><td>–</td><td></td>`;
   tbody.appendChild(tot);
   renderDashboard();
   renderTarjetasSesionesAdmin();
+  actualizarIconosOrden();
 }
 
 // ── EDICIÓN ADMIN ─────────────────────────────────────────
+// ORDENAMIENTO TABLA ADMIN
+let _ordenAdminKey = null; // 'nombre' | 'empresa' | 'pct'
+let _ordenAdminDir = 'asc';
+
+function ordenarTablaAdmin(key) {
+  if (_ordenAdminKey === key) {
+    _ordenAdminDir = _ordenAdminDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _ordenAdminKey = key;
+    _ordenAdminDir = 'asc';
+  }
+  renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
+}
+
+function actualizarIconosOrden() {
+  ['nombre','empresa','pct'].forEach(k => {
+    const el = document.getElementById('ord-ic-' + k);
+    if (!el) return;
+    el.textContent = (_ordenAdminKey === k) ? (_ordenAdminDir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+
 let _admEditPendiente = null; // {idx, sesNum, nuevoEstado}
 
 function rotarAdmin(idx, sesNum) {
@@ -2962,6 +3088,40 @@ function aplicarParticipantesExtra() {
   } catch(e) { console.warn('Error aplicando participantes guardados:', e); }
 }
 
+let _epIdxActual = null;
+
+function abrirModalEditarParticipante(idx) {
+  const p = getPartActivos()[idx];
+  if (!p) return;
+  _epIdxActual = idx;
+  document.getElementById('ep-nombre').value = p.n;
+  document.getElementById('ep-cargo').value = p.c || '';
+  document.getElementById('ep-empresa').value = p.e;
+  document.getElementById('ep-dni').textContent = p.d;
+  document.getElementById('ep-error').style.display = 'none';
+  document.getElementById('modal-editar-participante').classList.add('open');
+}
+
+function guardarEdicionParticipante() {
+  if (_epIdxActual === null) return;
+  const p = getPartActivos()[_epIdxActual];
+  const errEl = document.getElementById('ep-error');
+  const nombre = document.getElementById('ep-nombre').value.trim();
+  const cargo = document.getElementById('ep-cargo').value.trim();
+  const empresa = document.getElementById('ep-empresa').value.trim();
+  if (!nombre || !empresa) {
+    errEl.textContent = 'Apellidos y nombres, y Empresa, son obligatorios.';
+    errEl.style.display = 'block';
+    return;
+  }
+  p.n = nombre;
+  p.c = cargo;
+  p.e = empresa;
+  cerrarModal('modal-editar-participante');
+  autoguardar();
+  renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
+}
+
 function guardarParticipantesAgregados() {
   const cfg = CURSO_CONFIG[cursoActivoIdx];
   const c = CURSOS[cursoActivoIdx];
@@ -3206,14 +3366,22 @@ function onCambioAnioMesDashboard() {
   renderDashboardKPIs();
 }
 
-function onCambioCursoDashboard() {
+async function onCambioCursoDashboard() {
   const selCurso = document.getElementById('dash-filtro-curso');
   const selAnio = document.getElementById('dash-filtro-anio');
   const selMes = document.getElementById('dash-filtro-mes');
   const idx = selCurso.value;
   if (idx !== '') {
     const c = CURSOS[parseInt(idx,10)];
-    if (c) { selAnio.value = c.anio; selMes.value = c.mes; }
+    if (c) {
+      selAnio.value = c.anio; selMes.value = c.mes;
+      if (spConectado) {
+        const prevIdx = cursoActivoIdx;
+        cursoActivoIdx = parseInt(idx,10);
+        await spCargarAsistencia();
+        cursoActivoIdx = prevIdx;
+      }
+    }
   }
   renderDashboardKPIs();
 }
@@ -3519,6 +3687,7 @@ function loginFacilitador() {
     const err = document.getElementById('fac-err');
     if (dni === FAC_DNI) {
       err.style.display = 'none';
+      rolSesionActual = 'facilitador';
       document.getElementById('top-badge').textContent = 'Facilitador';
       document.getElementById('top-badge').className = 'top-badge badge-fac';
       document.getElementById('top-badge').style.display = 'inline-block';
