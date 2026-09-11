@@ -192,6 +192,8 @@
   body.light-mode .sb-bottom { border-top-color: #e5e7eb !important; }
   /* Textos que usan var(--negro) para letras sobre tarjetas blancas: en modo día
      ese token se invierte a un gris casi blanco y el texto se vuelve ilegible. */
+  .participante-retirado { opacity: 0.45; }
+  .badge-retirado { font-size:10px; background:#374151; color:#e5e7eb; padding:1px 7px; border-radius:8px; margin-left:6px; vertical-align:middle; }
   body.light-mode .alert-nom, body.light-mode .dash-card-tit, body.light-mode .kpi-valor,
   body.light-mode .curso-mini-nom, body.light-mode .curso-card-nom, body.light-mode tbody td,
   body.light-mode .adm-nom, body.light-mode .pass-titulo, body.light-mode .part-nom,
@@ -1436,7 +1438,8 @@ async function spGuardarTodos() {
         participantes: part.map(p => ({
           cursoID, dni: p.d, nombre: p.n, empresa: p.e, cargo: p.c || '',
           sesiones: { s1: p.s1, s2: p.s2, s3: p.s3, s4: p.s4 },
-          actualizadoPor: dniActual || 'sistema'
+          actualizadoPor: dniActual || 'sistema',
+          retirado: !!p.retirado
         }))
       })
     });
@@ -1474,6 +1477,7 @@ async function spCargarAsistencia() {
         if (ses.s2 !== undefined && ses.s2 !== '') p.s2 = ses.s2;
         if (ses.s3 !== undefined && ses.s3 !== '') p.s3 = ses.s3;
         if (ses.s4 !== undefined && ses.s4 !== '') p.s4 = ses.s4;
+        if (item.retirado !== undefined) p.retirado = !!item.retirado;
       }
     });
     console.log('Sheets: asistencia cargada (' + items.length + ' registros)');
@@ -1847,7 +1851,7 @@ function abrirModalExport() {
 
 // ── RENDER DASHBOARD (stats dinámicos) ──────────────────
 function renderDashboard() {
-  const part = getPartActivos();
+  const part = getPartSinRetirados();
   const total = part.length;
   const t1 = part.filter(p=>p.s1==='a'||p.s1==='j').length;
   const t2 = part.filter(p=>p.s2==='a'||p.s2==='j').length;
@@ -1867,7 +1871,7 @@ function renderDashboard() {
   const db  = document.getElementById('dash-bajo');
   const dp  = document.getElementById('dash-pend');
   const dTotal = document.getElementById('dash-part-total');
-  if (dTotal) dTotal.textContent = getPartActivos().length;
+  if (dTotal) dTotal.textContent = getPartSinRetirados().length;
   if (ds1) ds1.textContent = t1;
   if (ds2) ds2.textContent = t2;
   if (db)  db.textContent  = bajo;
@@ -2516,6 +2520,10 @@ function getPartActivos() {
   return CURSO_CONFIG[cursoActivoIdx]?.part || PARTICIPANTES;
 }
 
+function getPartSinRetirados() {
+  return getPartActivos().filter(p => !p.retirado);
+}
+
 function getSesConfig() {
   return CURSO_CONFIG[cursoActivoIdx] || CURSO_CONFIG[0];
 }
@@ -2760,25 +2768,35 @@ function renderTablaAdmin(filtro='', estado='') {
     };
 
     const tr = document.createElement('tr');
-    if (pct<75) tr.classList.add('bajo75');
+    if (pct<75 && !p.retirado) tr.classList.add('bajo75');
+    if (p.retirado) tr.classList.add('participante-retirado');
     tr.innerHTML = `
       <td style="color:#9ca3af;font-size:10px">${i+1}</td>
-      <td><div class="np">${p.n}</div><div class="cs">${p.c}</div></td>
+      <td><div class="np">${p.n}</div><div class="cs">${p.c}</div>${p.retirado ? '<span class="badge-retirado">Retirado</span>' : ''}</td>
       <td><span class="emp-badge">${p.e}</span></td>
       <td style="font-size:11px;font-family:monospace;color:#6b7280">${p.d}</td>`;
-    tr.innerHTML += mkAdm(p.s1,i,1) + mkAdm(p.s2,i,2) + mkAdm(p.s3,i,3) + mkAdm(p.s4,i,4);
-    tr.innerHTML += `<td class="pct-cell"><div class="pct-num ${cls}">${pct}%</div><div class="pct-bar ${cls}" style="width:${pct}%"></div></td>`;
-    tr.innerHTML += `<td style="text-align:center"><button class="btn-icon-edit" onclick="abrirModalEditarParticipante(${i})" title="Editar datos del participante"><i class="ti ti-pencil"></i></button></td>`;
+    if (p.retirado) {
+      tr.innerHTML += `<td colspan="4" style="text-align:center;color:#9ca3af;font-size:11px">Retirado del curso</td>`;
+      tr.innerHTML += `<td class="pct-cell">–</td>`;
+    } else {
+      tr.innerHTML += mkAdm(p.s1,i,1) + mkAdm(p.s2,i,2) + mkAdm(p.s3,i,3) + mkAdm(p.s4,i,4);
+      tr.innerHTML += `<td class="pct-cell"><div class="pct-num ${cls}">${pct}%</div><div class="pct-bar ${cls}" style="width:${pct}%"></div></td>`;
+    }
+    tr.innerHTML += `<td style="text-align:center;white-space:nowrap">
+      <button class="btn-icon-edit" onclick="abrirModalEditarParticipante(${i})" title="Editar datos del participante"><i class="ti ti-pencil"></i></button>
+      <button class="btn-icon-edit" onclick="toggleRetirado(${i})" title="${p.retirado ? 'Reactivar participante' : 'Marcar como retirado'}"><i class="ti ti-${p.retirado ? 'user-check' : 'user-x'}"></i></button>
+    </td>`;
     tbody.appendChild(tr);
   });
   // Totales dinámicos
   const tot = document.createElement('tr');
   tot.className = 'tot-row';
-  const total = part.length;
-  const t1 = part.filter(p=>p.s1==='a'||p.s1==='j').length;
-  const t2 = part.filter(p=>p.s2==='a'||p.s2==='j').length;
-  const t3 = part.filter(p=>p.s3==='a'||p.s3==='j').length;
-  const t4 = part.filter(p=>p.s4==='a'||p.s4==='j').length;
+  const partActivosTot = part.filter(p => !p.retirado);
+  const total = partActivosTot.length;
+  const t1 = partActivosTot.filter(p=>p.s1==='a'||p.s1==='j').length;
+  const t2 = partActivosTot.filter(p=>p.s2==='a'||p.s2==='j').length;
+  const t3 = partActivosTot.filter(p=>p.s3==='a'||p.s3==='j').length;
+  const t4 = partActivosTot.filter(p=>p.s4==='a'||p.s4==='j').length;
   const hasSes3 = cfg.totalSes >= 3;
   const hasSes4 = cfg.totalSes >= 4;
   tot.innerHTML = `<td colspan="4">Total por sesión</td><td>${t1}/${total}</td><td>${t2}/${total}</td><td>${hasSes3?t3+'/'+total:'–'}</td><td>${hasSes4?t4+'/'+total:'–'}</td><td>–</td><td></td>`;
@@ -2809,6 +2827,16 @@ function actualizarIconosOrden() {
     if (!el) return;
     el.textContent = (_ordenAdminKey === k) ? (_ordenAdminDir === 'asc' ? '▲' : '▼') : '';
   });
+}
+
+function toggleRetirado(idx) {
+  const p = getPartActivos()[idx];
+  if (!p) return;
+  const accion = p.retirado ? 'reactivar' : 'marcar como retirado';
+  if (!confirm(`¿Seguro que deseas ${accion} a ${p.n}?`)) return;
+  p.retirado = !p.retirado;
+  autoguardar();
+  renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
 }
 
 let _admEditPendiente = null; // {idx, sesNum, nuevoEstado}
@@ -3416,6 +3444,7 @@ function renderDashboardKPIs() {
     if (!c || !cfg) return;
     if (c.estado === 'Completo') completados++;
     (cfg.part || []).forEach(p => {
+      if (p.retirado) return;
       dniSet.add(p.d);
       const pct = calcPctParticipanteDash(p, cfg.totalSes);
       sumaPct += pct; cuentaPct++;
@@ -3776,7 +3805,8 @@ function renderTablaFac() {
   const totalSes = cfg ? cfg.totalSes : 4;
 
   // 4. Indicador de progreso en tiempo real
-  const partActivos = getPartActivos();
+  const partTodos = getPartActivos();
+  const partActivos = partTodos.filter(p => !p.retirado);
   const marcados = sesActiva >= 0 ? partActivos.filter(p => {
     const v = p[keySes[sesActiva]];
     return v === 'a' || v === 'f' || v === 'j';
@@ -3805,7 +3835,7 @@ function renderTablaFac() {
   const empFiltro = document.querySelector('#v-registro select');
 
   partOrdenados.forEach((p, i) => {
-    const idxReal = partActivos.indexOf(p);
+    const idxReal = partTodos.indexOf(p);
     const q = filtroFacTexto.toLowerCase();
     if (q && !p.n.toLowerCase().includes(q) && !p.e.toLowerCase().includes(q) && !p.d.includes(q)) return;
     const { pct, cls } = pctInfo(p.s1, p.s2, p.s3, p.s4);
