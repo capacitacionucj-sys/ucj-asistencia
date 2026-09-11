@@ -1470,7 +1470,7 @@ async function spCargarAsistencia() {
     if (items.length === 0) return false;
     const part = getPartActivos();
     items.forEach(item => {
-      const p = part.find(x => x.d === item.dni);
+      const p = part.find(x => String(x.d) === String(item.dni));
       if (p) {
         const ses = item.sesiones || {};
         if (ses.s1 !== undefined && ses.s1 !== '') p.s1 = ses.s1;
