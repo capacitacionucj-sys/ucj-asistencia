@@ -1085,7 +1085,14 @@
       <div class="modal-titulo"><i class="ti ti-edit" style="color:var(--rojo)"></i> Modificar asistencia</div>
       <div class="modal-body">
         <div id="modal-motivo-titulo" style="font-weight:600;color:#1a1a1a;margin-bottom:4px"></div>
-        <div id="modal-motivo-detalle" style="font-size:11px;color:#6b7280;margin-bottom:16px"></div>
+        <div id="modal-motivo-detalle" style="font-size:11px;color:#6b7280;margin-bottom:12px"></div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:6px">Nuevo estado <span style="color:var(--rojo)">*</span></label>
+        <select id="modal-motivo-select" style="width:100%;border:1px solid #d1d5db;border-radius:var(--radius);padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:14px">
+          <option value="a">✓ Asistió</option>
+          <option value="f">✗ Faltó</option>
+          <option value="j">J Justificado</option>
+          <option value="">– Sin marcar</option>
+        </select>
         <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:6px">Motivo de la modificación <span style="color:var(--rojo)">*</span></label>
         <textarea id="modal-motivo-txt" placeholder="Describe el motivo de esta corrección..." style="width:100%;min-height:80px;border:1px solid #d1d5db;border-radius:var(--radius);padding:8px;font-family:inherit;font-size:12px;resize:vertical;box-sizing:border-box"></textarea>
         <div id="modal-motivo-err" style="display:none;color:var(--rojo);font-size:11px;margin-top:4px">El motivo es obligatorio para modificar sesiones cerradas.</div>
@@ -2835,51 +2842,68 @@ function rotarAdmin(idx, sesNum) {
   const p = getPartActivos()[idx];
   const keys = ['s1','s2','s3','s4'];
   const key = keys[sesNum-1];
-  const orden = ['','a','f','j'];
-  const nuevoEstado = orden[(orden.indexOf(p[key])+1)%orden.length];
   const sesActiva = getSesionActivaIdx();
   const sesIdx = sesNum - 1;
   const esCerrada = sesActiva >= 0 ? sesIdx < sesActiva : true;
 
   if (esCerrada) {
-    // Pedir motivo antes de aplicar
-    _admEditPendiente = { idx, sesNum, key, nuevoEstado };
+    // Pedir estado explícito + motivo antes de aplicar (sesión cerrada)
+    detenerPollingAsistencia(); // evita que el refresco automático pise el cambio mientras se edita
+    _admEditPendiente = { idx, sesNum, key };
     const cfg = getSesConfig();
     const fecha = cfg && cfg.fechas ? cfg.fechas[sesIdx] : `Sesión ${sesNum}`;
+    const estadoActualTxt = p[key]==='a'?'Asistió':p[key]==='f'?'Faltó':p[key]==='j'?'Justificado':'Sin marcar';
     document.getElementById('modal-motivo-titulo').textContent = `Modificar asistencia — ${p.n}`;
-    document.getElementById('modal-motivo-detalle').textContent = `Sesión ${sesNum} (${fecha}) · Estado actual: ${p[key]||'–'} → ${nuevoEstado||'–'}`;
+    document.getElementById('modal-motivo-detalle').textContent = `Sesión ${sesNum} (${fecha}) · Estado actual: ${estadoActualTxt}`;
+    document.getElementById('modal-motivo-select').value = p[key] || '';
     document.getElementById('modal-motivo-txt').value = '';
+    document.getElementById('modal-motivo-err').style.display = 'none';
+    const btnOkReset = document.querySelector('#modal-motivo .btn-modal-ok');
+    if (btnOkReset) { btnOkReset.disabled = false; btnOkReset.innerHTML = '<i class="ti ti-check"></i> Confirmar cambio'; }
     document.getElementById('modal-motivo').classList.add('open');
   } else {
+    const orden = ['','a','f','j'];
+    const nuevoEstado = orden[(orden.indexOf(p[key])+1)%orden.length];
     p[key] = nuevoEstado;
     autoguardar();
     renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
   }
 }
 
-function confirmarMotivoAdmin() {
+async function confirmarMotivoAdmin() {
   const motivo = document.getElementById('modal-motivo-txt').value.trim();
   if (!motivo) { document.getElementById('modal-motivo-err').style.display='block'; return; }
   document.getElementById('modal-motivo-err').style.display='none';
+  const nuevoEstado = document.getElementById('modal-motivo-select').value;
+  const btnOk = document.querySelector('#modal-motivo .btn-modal-ok');
   if (_admEditPendiente) {
-    const { idx, key, nuevoEstado } = _admEditPendiente;
+    const { idx, key } = _admEditPendiente;
     const partAdm = getPartActivos();
     partAdm[idx][key] = nuevoEstado;
-    // Registrar en auditoría local y SharePoint
+    renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||''); // reflejar de inmediato
+    if (btnOk) { btnOk.disabled = true; btnOk.textContent = 'Guardando...'; }
+    // Registrar en auditoría y guardar en Google Sheets — se ESPERA a que termine
+    // antes de reanudar el refresco automático, para que no pise este cambio.
     const entry = { accion: 'modificacion_admin', usuario: dniActual, timestamp: new Date().toISOString(), motivo, participante: partAdm[idx].n, sesion: key, estado: nuevoEstado };
     console.log('Auditoría:', entry);
-    spRegistrarAuditoria('modificacion_admin - ' + partAdm[idx].n + ' → ' + nuevoEstado, key, motivo);
-    spGuardarParticipante(partAdm[idx]);
+    try {
+      await spRegistrarAuditoria('modificacion_admin - ' + partAdm[idx].n + ' → ' + (nuevoEstado || 'sin marcar'), key, motivo);
+      await spGuardarParticipante(partAdm[idx]);
+    } catch(e) {
+      console.warn('Error guardando modificación admin:', e);
+    }
     _admEditPendiente = null;
   }
   cerrarModal('modal-motivo');
   autoguardar();
   renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'');
+  if (document.getElementById('panel-detalle')?.classList.contains('activo')) iniciarPollingAsistencia();
 }
 
 function cancelarMotivoAdmin() {
   _admEditPendiente = null;
   cerrarModal('modal-motivo');
+  if (document.getElementById('panel-detalle')?.classList.contains('activo')) iniciarPollingAsistencia();
 }
 
 function filtrarTablaAdmin(v) { renderTablaAdmin(v); }
