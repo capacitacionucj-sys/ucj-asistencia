@@ -1470,7 +1470,7 @@ async function spCargarAsistencia() {
     if (items.length === 0) return false;
     const part = getPartActivos();
     items.forEach(item => {
-      const p = part.find(x => String(x.d) === String(item.dni));
+      const p = part.find(x => x.d === item.dni);
       if (p) {
         const ses = item.sesiones || {};
         if (ses.s1 !== undefined && ses.s1 !== '') p.s1 = ses.s1;
@@ -2156,17 +2156,13 @@ function confirmarCerrar() {
   const msgEl = document.querySelector('#modal-cerrar .modal-body');
   if (tituloEl) tituloEl.innerHTML = '<i class="ti ti-logout" style="color:var(--rojo)"></i> ¿Cerrar sesión?';
   if (msgEl) msgEl.textContent = 'Verifica los participantes con falta o justificado antes de confirmar. Los datos se sincronizan automáticamente con SharePoint.';
-  // 6. Convertir vacíos → F en la sesión activa (del curso realmente activo)
+  // Vista previa de lo que pasaría al confirmar (NO se modifica ni guarda nada aquí todavía —
+  // eso ocurre solo si el usuario hace clic en "Confirmar y cerrar sesión", ver cerrarSesion()).
   const key = getSesionActivaKey();
   const partActivos = getPartActivos();
-  if (key) {
-    partActivos.forEach(p => { if (p[key] === '' || p[key] === undefined) p[key] = 'f'; });
-    autoguardar();
-    renderTablaFac();
-  }
 
-  // 7. Construir lista de F y J para advertencia
-  const faltaron = key ? partActivos.filter(p => p[key] === 'f') : [];
+  // 7. Construir lista de F (reales + vacíos que se marcarán como Falta) y J para advertencia
+  const faltaron = key ? partActivos.filter(p => p[key] === 'f' || p[key] === '' || p[key] === undefined) : [];
   const justificados = key ? partActivos.filter(p => p[key] === 'j') : [];
 
   const modalBody = document.getElementById('modal-cerrar-body');
@@ -2190,6 +2186,13 @@ function confirmarCerrar() {
   document.getElementById('modal-cerrar').classList.add('open');
 }
 function cerrarSesion() {
+  // Convertir vacíos → F en la sesión activa SOLO al confirmar el cierre (no al abrir el modal)
+  const key = getSesionActivaKey();
+  if (key) {
+    const partActivos = getPartActivos();
+    partActivos.forEach(p => { if (p[key] === '' || p[key] === undefined) p[key] = 'f'; });
+    autoguardar();
+  }
   detenerPollingAsistencia();
   exportarConsolidadoExcel(); // guardado automático consolidado al cerrar sesión
   cerrarModal('modal-cerrar');
@@ -2549,26 +2552,13 @@ function getFechaHoyLima() {
 }
 
 function getSesionActivaIdx() {
-  // Retorna el índice (0-based) de la sesión activa hoy, o -1 si no hay
+  // Retorna el índice (0-based) de la sesión activa HOY, o -1 si no hay sesión programada para hoy.
+  // (No adivina la próxima sesión futura: una sesión que aún no ocurre nunca debe tratarse como "activa".)
   const cfg = getSesConfig();
   if (!cfg || !cfg.fechas) return -1;
   const hoy = getFechaHoyLima();
   const idxHoy = cfg.fechas.findIndex(f => f === hoy);
-  if (idxHoy >= 0) return idxHoy;
-  // MODO PRUEBA: si no hay sesión hoy, activar la última sesión no completada
-  // (sesión cuya fecha es la más próxima al futuro o la última pasada)
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const lima = new Date(utc + (-5 * 60) * 60000);
-  const hoyMs = new Date(lima.getFullYear(), lima.getMonth(), lima.getDate()).getTime();
-  let idxPrueba = -1;
-  for (let i = 0; i < cfg.fechas.length; i++) {
-    const [dd, mm] = cfg.fechas[i].split('/').map(Number);
-    const fMs = new Date(lima.getFullYear(), mm-1, dd).getTime();
-    if (fMs >= hoyMs) { idxPrueba = i; break; }
-  }
-  if (idxPrueba < 0) idxPrueba = cfg.fechas.length - 1;
-  return idxPrueba;
+  return idxHoy; // ya es -1 si no hay coincidencia
 }
 
 function getSesionActivaKey() {
