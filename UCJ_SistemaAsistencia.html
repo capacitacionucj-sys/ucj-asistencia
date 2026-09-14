@@ -424,6 +424,8 @@
   .btn-quitar { background: transparent; border: 1px solid #fecaca; color: var(--rojo); font-size: 11px; padding: 3px 10px; border-radius: var(--radius); cursor: pointer; font-family: inherit; }
   .btn-dia-sem { width: 28px; height: 28px; border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn-dia-sem.activo { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+  .chip-filtro { padding: 4px 12px; border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 999px; font-size: 11px; font-weight: 500; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .chip-filtro.activo { background: var(--rojo); border-color: var(--rojo); color: #fff; }
   .btn-quitar:hover { background: #fee2e2; }
   .adm-add-trigger { padding: 11px 16px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 7px; cursor: pointer; color: var(--rojo); font-size: 12px; background: #fafafa; font-family: inherit; border: none; width: 100%; text-align: left; }
   .adm-add-trigger:hover { background: #f3f4f6; }
@@ -864,7 +866,14 @@
             <i class="ti ti-search" style="color:#9ca3af;font-size:15px"></i>
             <input type="text" placeholder="Buscar por apellidos, nombre o DNI..." id="busca-part" oninput="buscarParticipante()" style="max-width:400px" />
           </div>
-          <div style="padding:20px 24px;flex:1;overflow-y:auto">
+          <div style="padding:10px 24px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:11px;color:#6b7280;font-weight:500">Empresa:</span>
+            <div id="filtro-empresas-wrap" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div style="padding:14px 24px 0;display:flex;justify-content:flex-end">
+            <button class="btn-sm" id="btn-exportar-todos-part" style="display:none" onclick="exportarReporteTodosFiltrados()"><i class="ti ti-download"></i> Exportar todos</button>
+          </div>
+          <div style="padding:10px 24px 20px;flex:1;overflow-y:auto">
             <div id="part-resultado"></div>
           </div>
         </div>
@@ -2935,10 +2944,40 @@ function filtrarEstadoAdmin(v) { renderTablaAdmin(document.querySelector('#panel
 // ── BUSCAR PARTICIPANTE ──────────────────────────────────
 let _ultimaBusquedaPart = {}; // DNI -> {n,c,e,d,cursos:[{nom,pct,cls,idx}]} — usado por exportarReporteParticipante()
 
+function getEmpresasUnicas() {
+  const set = new Set();
+  Object.values(CURSO_CONFIG).forEach(cfg => (cfg.part || []).forEach(p => { if (p.e) set.add(p.e); }));
+  return [...set].sort();
+}
+
+function renderFiltroEmpresas() {
+  const wrap = document.getElementById('filtro-empresas-wrap');
+  if (!wrap) return;
+  const empresas = getEmpresasUnicas();
+  wrap.innerHTML = empresas.map(e =>
+    `<button type="button" class="chip-filtro" data-empresa="${e}" onclick="toggleFiltroEmpresa(this)">${e}</button>`
+  ).join('');
+}
+
+function toggleFiltroEmpresa(btn) {
+  btn.classList.toggle('activo');
+  buscarParticipante();
+}
+
+function getEmpresasSeleccionadas() {
+  return [...document.querySelectorAll('#filtro-empresas-wrap .chip-filtro.activo')].map(b => b.dataset.empresa);
+}
+
 function buscarParticipante() {
   const q = document.getElementById('busca-part').value.toLowerCase().trim();
+  const empresasSel = getEmpresasSeleccionadas();
   const res = document.getElementById('part-resultado');
-  if (q.length < 2) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">Escribe al menos 2 caracteres para buscar.</div>'; return; }
+  const btnExportarTodos = document.getElementById('btn-exportar-todos-part');
+  if (q.length < 2 && empresasSel.length === 0) {
+    res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">Escribe al menos 2 caracteres o elige una o más empresas para listar a todos sus trabajadores.</div>';
+    if (btnExportarTodos) btnExportarTodos.style.display = 'none';
+    return;
+  }
 
   // Buscar en TODOS los cursos (no solo Grupo 1), agrupando resultados por DNI
   const porDni = {};
@@ -2946,7 +2985,9 @@ function buscarParticipante() {
     const cfg = CURSO_CONFIG[idx];
     const nomCurso = (CURSOS[idx] && CURSOS[idx].nom) || `Curso ${idx}`;
     (cfg.part || []).forEach(p => {
-      if (!(p.n.toLowerCase().includes(q) || p.d.includes(q))) return;
+      const coincideTexto = q.length < 2 || p.n.toLowerCase().includes(q) || p.d.includes(q);
+      const coincideEmpresa = empresasSel.length === 0 || empresasSel.includes(p.e);
+      if (!coincideTexto || !coincideEmpresa) return;
       if (!porDni[p.d]) porDni[p.d] = { n: p.n, c: p.c, e: p.e, d: p.d, cursos: [] };
       const totalSes = cfg.totalSes || 4;
       const vals = [p.s1, p.s2, p.s3, p.s4].slice(0, totalSes);
@@ -2959,6 +3000,7 @@ function buscarParticipante() {
 
   const found = Object.values(porDni);
   _ultimaBusquedaPart = porDni;
+  if (btnExportarTodos) btnExportarTodos.style.display = found.length ? '' : 'none';
   if (!found.length) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">No se encontraron resultados.</div>'; return; }
 
   res.innerHTML = found.map(p => {
@@ -3011,6 +3053,46 @@ function exportarReporteParticipante(dni) {
   const yyyy = hoy.getFullYear();
   const nombreArchivo = p.n.replace(/[^a-zA-Z0-9]+/g, '_');
   XLSX.writeFile(wb, 'UCJ_Reporte_' + nombreArchivo + '_' + dd + mm + yyyy + '.xlsx');
+}
+
+// Reporte de TODOS los participantes actualmente listados (según texto/empresas filtradas)
+function exportarReporteTodosFiltrados() {
+  const dnis = Object.keys(_ultimaBusquedaPart);
+  if (!dnis.length || typeof XLSX === 'undefined') return;
+  const headers = ['DNI', 'Participante', 'Empresa', 'Curso', 'Facilitador', 'Modalidad', 'Tipo', 'Año', 'Fechas de sesión', 'N° sesiones', 'Horas', '% Asistencia'];
+  const rows = [];
+  dnis.forEach(dni => {
+    const p = _ultimaBusquedaPart[dni];
+    let totalHoras = 0;
+    p.cursos.forEach(c => {
+      const cfg = CURSO_CONFIG[c.idx];
+      const curso = CURSOS[c.idx];
+      const facilitador = curso && curso.meta ? curso.meta.split(' · ')[0].trim() : '';
+      const modalidad = (curso && curso.modalidad) || '';
+      const sincronia = (curso && curso.sincronia) || '';
+      const anioCurso = (curso && curso.anio) || '';
+      const fechas = cfg && cfg.fechas ? cfg.fechas.join(', ') : '';
+      const nSes = (curso && curso.ses) || (cfg && cfg.totalSes) || 0;
+      const horas = nSes * 2;
+      totalHoras += horas;
+      rows.push([p.d, p.n, p.e, c.nom, facilitador, modalidad, sincronia, anioCurso, fechas, nSes, horas, c.pct + '%']);
+    });
+    rows.push([p.d, p.n, p.e, '', '', '', '', '', '', 'TOTAL HORAS ACUMULADAS', totalHoras, '']);
+  });
+
+  const wsData = [headers, ...rows];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:12},{wch:30},{wch:16},{wch:32},{wch:20},{wch:12},{wch:12},{wch:8},{wch:28},{wch:12},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Reporte participantes');
+
+  const hoy = new Date();
+  const dd = String(hoy.getDate()).padStart(2,'0');
+  const mm = String(hoy.getMonth()+1).padStart(2,'0');
+  const yyyy = hoy.getFullYear();
+  const hh = String(hoy.getHours()).padStart(2,'0');
+  const mi = String(hoy.getMinutes()).padStart(2,'0');
+  XLSX.writeFile(wb, 'UCJ_Reporte_Participantes_' + dd + mm + yyyy + '_' + hh + mi + '.xlsx');
 }
 
 // ── ADMINS ────────────────────────────────────────────────
@@ -4155,6 +4237,7 @@ renderCursos();
 poblarFiltrosDashboard();
 renderDashboardKPIs();
 renderAdminsPanel();
+renderFiltroEmpresas();
 // Inicializar MSAL sin popup; si ya hay sesión cacheada, cargar desde SharePoint en background.
 // Si no hay sesión, el botón "Conectar Google Sheets" queda visible para que el usuario inicie el login con un clic.
 initMsal().then(() => {
