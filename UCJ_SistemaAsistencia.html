@@ -762,7 +762,10 @@
         <div class="panel" id="panel-cursos">
           <div class="sec-header">
             <div><div class="sec-titulo">Cursos</div><div class="sec-sub">InnovAcción 2026 y otros programas</div></div>
-            <button class="btn-nuevo" onclick="abrirModalNuevoCurso()"><i class="ti ti-plus"></i> Nuevo curso</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn-sm" onclick="exportarConsolidadoExcel()" title="Descarga el reporte de asistencia de todos los cursos"><i class="ti ti-download"></i> Exportar consolidado</button>
+              <button class="btn-nuevo" onclick="abrirModalNuevoCurso()"><i class="ti ti-plus"></i> Nuevo curso</button>
+            </div>
           </div>
           <div class="filtros-bar">
             <i class="ti ti-search" style="color:#9ca3af;font-size:15px"></i>
@@ -2201,7 +2204,7 @@ function cerrarSesion() {
     autoguardar();
   }
   detenerPollingAsistencia();
-  exportarConsolidadoExcel(); // guardado automático consolidado al cerrar sesión
+  exportarExcel(); // guardado automático SOLO del curso que estaba revisando el facilitador
   cerrarModal('modal-cerrar');
   clearTimeout(inactivityTimer);
   clearTimeout(countdownTimer);
@@ -2910,6 +2913,8 @@ function filtrarTablaAdmin(v) { renderTablaAdmin(v); }
 function filtrarEstadoAdmin(v) { renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'', v); }
 
 // ── BUSCAR PARTICIPANTE ──────────────────────────────────
+let _ultimaBusquedaPart = {}; // DNI -> {n,c,e,d,cursos:[{nom,pct,cls,idx}]} — usado por exportarReporteParticipante()
+
 function buscarParticipante() {
   const q = document.getElementById('busca-part').value.toLowerCase().trim();
   const res = document.getElementById('part-resultado');
@@ -2928,11 +2933,12 @@ function buscarParticipante() {
       const ok = vals.filter(v => v==='a'||v==='j').length;
       const pct = Math.round(ok / totalSes * 100);
       const cls = pct>=75?'ok':pct>=50?'warn':'bad';
-      porDni[p.d].cursos.push({ nom: nomCurso, pct, cls });
+      porDni[p.d].cursos.push({ nom: nomCurso, pct, cls, idx: Number(idx) });
     });
   });
 
   const found = Object.values(porDni);
+  _ultimaBusquedaPart = porDni;
   if (!found.length) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:20px 0">No se encontraron resultados.</div>'; return; }
 
   res.innerHTML = found.map(p => {
@@ -2942,6 +2948,7 @@ function buscarParticipante() {
       <div class="part-header">
         <div class="part-avatar">${ini}</div>
         <div><div class="part-nom">${p.n}</div><div class="part-meta">${p.c} · ${p.e} · DNI ${p.d}</div></div>
+        <button class="btn-sm" style="margin-left:auto" onclick="exportarReporteParticipante('${p.d}')" title="Descargar reporte de este participante"><i class="ti ti-download"></i> Exportar reporte</button>
       </div>
       <div style="font-size:12px;font-weight:500;color:#374151;margin-bottom:8px">Historial de cursos InnovAcción 2026:</div>
       <div class="part-cursos">
@@ -2949,6 +2956,38 @@ function buscarParticipante() {
       </div>
     </div>`;
   }).join('');
+}
+
+// Reporte individual: curso, fechas, N° sesiones, facilitador y horas por curso + total de horas acumuladas
+function exportarReporteParticipante(dni) {
+  const p = _ultimaBusquedaPart[dni];
+  if (!p || typeof XLSX === 'undefined') return;
+  const headers = ['Curso', 'Facilitador', 'Fechas de sesión', 'N° sesiones', 'Horas', '% Asistencia'];
+  let totalHoras = 0;
+  const rows = p.cursos.map(c => {
+    const cfg = CURSO_CONFIG[c.idx];
+    const curso = CURSOS[c.idx];
+    const facilitador = curso && curso.meta ? curso.meta.split(' · ')[0].trim() : '';
+    const fechas = cfg && cfg.fechas ? cfg.fechas.join(', ') : '';
+    const nSes = (curso && curso.ses) || (cfg && cfg.totalSes) || 0;
+    const horas = nSes * 2;
+    totalHoras += horas;
+    return [c.nom, facilitador, fechas, nSes, horas, c.pct + '%'];
+  });
+  rows.push(['', '', '', 'TOTAL HORAS ACUMULADAS', totalHoras, '']);
+
+  const wsData = [headers, ...rows];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:32},{wch:20},{wch:34},{wch:14},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Reporte participante');
+
+  const hoy = new Date();
+  const dd = String(hoy.getDate()).padStart(2,'0');
+  const mm = String(hoy.getMonth()+1).padStart(2,'0');
+  const yyyy = hoy.getFullYear();
+  const nombreArchivo = p.n.replace(/[^a-zA-Z0-9]+/g, '_');
+  XLSX.writeFile(wb, 'UCJ_Reporte_' + nombreArchivo + '_' + dd + mm + yyyy + '.xlsx');
 }
 
 // ── ADMINS ────────────────────────────────────────────────
