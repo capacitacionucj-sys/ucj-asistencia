@@ -286,6 +286,8 @@
   .btn-icon-edit:hover { background: #f3f4f6; color: var(--rojo); border-color: var(--rojo); }
   .det-header .btn-sm { background: transparent; color: rgba(242,242,242,0.85); border: 1px solid rgba(242,242,242,0.35); }
   .det-header .btn-sm:hover { background: rgba(242,242,242,0.12); }
+  .sec-header .btn-sm { background: transparent; color: rgba(242,242,242,0.85); border: 1px solid rgba(242,242,242,0.35); }
+  .sec-header .btn-sm:hover { background: rgba(242,242,242,0.12); }
   .btn-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
   .fac-strip { background: var(--gris-dark); border-left: 4px solid var(--rojo-osc); padding: 8px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .fac-strip-txt { font-size: 11px; color: rgba(242,242,242,0.7); }
@@ -1218,6 +1220,20 @@
         <div><label class="adm-form-label">Fecha de fin (informativa)</label><input class="adm-form-input" type="date" id="nc-fecha-fin"/></div>
         <div><label class="adm-form-label">Hora de inicio</label><input class="adm-form-input" type="time" id="nc-hora-inicio" value="17:30"/></div>
         <div><label class="adm-form-label">Hora de fin</label><input class="adm-form-input" type="time" id="nc-hora-fin" value="19:30"/></div>
+        <div>
+          <label class="adm-form-label">Modalidad</label>
+          <select class="adm-form-input" id="nc-modalidad">
+            <option value="Presencial">Presencial</option>
+            <option value="Virtual">Virtual</option>
+          </select>
+        </div>
+        <div>
+          <label class="adm-form-label">Tipo</label>
+          <select class="adm-form-input" id="nc-sincronia">
+            <option value="Síncrona">Síncrona</option>
+            <option value="Asíncrona">Asíncrona</option>
+          </select>
+        </div>
       </div>
       <div style="border:1px solid #e5e7eb;border-radius:var(--radius);padding:10px;margin-bottom:10px;background:#fafafa">
         <div style="font-size:12px;font-weight:600;margin-bottom:8px">Generar fechas automáticamente (opcional)</div>
@@ -1553,12 +1569,12 @@ let dniActual = '';
 let rolSesionActual = ''; // 'admin' | 'facilitador'
 
 const CURSOS = [
-  { nom:'Claude Nivel Básico – Grupo 1', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:4, estado:'Completo', fecha:'Jun 2026', anio:'2026', mes:'Jun' },
-  { nom:'Claude Nivel Básico – Grupo 2', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:4, estado:'Completo', fecha:'Ago 2026', anio:'2026', mes:'Ago' },
-  { nom:'Introducción a la IA', meta:'Elek Romero · Barrio · Interno', part:30, ses:4, comp:4, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May' },
-  { nom:'Bizagi 2026', meta:'Rodrigo Rodriguez · Sinercorp & Elek Romero · Barrio', part:16, ses:3, comp:3, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May' },
-  { nom:'Formación de Facilitadores', meta:'Iosef Navarro V. · UPC · Externo', part:28, ses:3, comp:3, estado:'Completo', fecha:'Abr 2026', anio:'2026', mes:'Abr' },
-  { nom:'Claude Intermedio', meta:'César Asmat · Tandem - Interno', part:34, ses:4, comp:0, estado:'En curso', fecha:'Sep 2026', anio:'2026', mes:'Sep', inicio:'2026-09-08', fin:'2026-09-18', horaInicio:'17:00', horaFin:'19:00' },
+  { nom:'Claude Nivel Básico – Grupo 1', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:4, estado:'Completo', fecha:'Jun 2026', anio:'2026', mes:'Jun', modalidad:'Presencial', sincronia:'Síncrona' },
+  { nom:'Claude Nivel Básico – Grupo 2', meta:'César Asmat · Tándem · Interno', part:32, ses:4, comp:4, estado:'Completo', fecha:'Ago 2026', anio:'2026', mes:'Ago', modalidad:'Presencial', sincronia:'Síncrona' },
+  { nom:'Introducción a la IA', meta:'Elek Romero · Barrio · Interno', part:30, ses:4, comp:4, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May', modalidad:'Presencial', sincronia:'Síncrona' },
+  { nom:'Bizagi 2026', meta:'Rodrigo Rodriguez · Sinercorp & Elek Romero · Barrio', part:16, ses:3, comp:3, estado:'Completo', fecha:'May 2026', anio:'2026', mes:'May', modalidad:'Presencial', sincronia:'Síncrona' },
+  { nom:'Formación de Facilitadores', meta:'Iosef Navarro V. · UPC · Externo', part:28, ses:3, comp:3, estado:'Completo', fecha:'Abr 2026', anio:'2026', mes:'Abr', modalidad:'Presencial', sincronia:'Síncrona' },
+  { nom:'Claude Intermedio', meta:'César Asmat · Tandem - Interno', part:34, ses:4, comp:0, estado:'En curso', fecha:'Sep 2026', anio:'2026', mes:'Sep', inicio:'2026-09-08', fin:'2026-09-18', horaInicio:'17:00', horaFin:'19:00', modalidad:'Presencial', sincronia:'Síncrona' },
 ];
 
 const PARTICIPANTES = [
@@ -2962,24 +2978,27 @@ function buscarParticipante() {
 function exportarReporteParticipante(dni) {
   const p = _ultimaBusquedaPart[dni];
   if (!p || typeof XLSX === 'undefined') return;
-  const headers = ['Curso', 'Facilitador', 'Fechas de sesión', 'N° sesiones', 'Horas', '% Asistencia'];
+  const headers = ['Curso', 'Facilitador', 'Modalidad', 'Tipo', 'Año', 'Fechas de sesión', 'N° sesiones', 'Horas', '% Asistencia'];
   let totalHoras = 0;
   const rows = p.cursos.map(c => {
     const cfg = CURSO_CONFIG[c.idx];
     const curso = CURSOS[c.idx];
     const facilitador = curso && curso.meta ? curso.meta.split(' · ')[0].trim() : '';
+    const modalidad = (curso && curso.modalidad) || '';
+    const sincronia = (curso && curso.sincronia) || '';
+    const anioCurso = (curso && curso.anio) || '';
     const fechas = cfg && cfg.fechas ? cfg.fechas.join(', ') : '';
     const nSes = (curso && curso.ses) || (cfg && cfg.totalSes) || 0;
     const horas = nSes * 2;
     totalHoras += horas;
-    return [c.nom, facilitador, fechas, nSes, horas, c.pct + '%'];
+    return [c.nom, facilitador, modalidad, sincronia, anioCurso, fechas, nSes, horas, c.pct + '%'];
   });
-  rows.push(['', '', '', 'TOTAL HORAS ACUMULADAS', totalHoras, '']);
+  rows.push(['', '', '', '', '', '', 'TOTAL HORAS ACUMULADAS', totalHoras, '']);
 
   const wsData = [headers, ...rows];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = [{wch:32},{wch:20},{wch:34},{wch:14},{wch:10},{wch:14}];
+  ws['!cols'] = [{wch:32},{wch:20},{wch:12},{wch:12},{wch:8},{wch:28},{wch:14},{wch:10},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws, 'Reporte participante');
 
   const hoy = new Date();
@@ -3639,6 +3658,8 @@ function crearCursoNuevo() {
   const fechaFinRaw = document.getElementById('nc-fecha-fin').value;
   const horaInicioRaw = document.getElementById('nc-hora-inicio').value;
   const horaFinRaw = document.getElementById('nc-hora-fin').value;
+  const modalidad = document.getElementById('nc-modalidad').value;
+  const sincronia = document.getElementById('nc-sincronia').value;
   const nses = parseInt(document.getElementById('nc-nses').value, 10) || 4;
   const fechasInputs = [...document.querySelectorAll('#nc-fechas-wrap input')];
   const fechasRaw = fechasInputs.map(i => i.value);
@@ -3674,7 +3695,7 @@ function crearCursoNuevo() {
     return d + '/' + m;
   });
 
-  const nuevoCurso = { nom, meta: facilitador + ' · ' + empresa, part: part.length, ses: nses, comp: 0, estado: 'En curso', fecha, anio, mes, inicio: fechaInicioRaw, fin: fechaFinRaw, horaInicio: horaInicioRaw, horaFin: horaFinRaw };
+  const nuevoCurso = { nom, meta: facilitador + ' · ' + empresa, part: part.length, ses: nses, comp: 0, estado: 'En curso', fecha, anio, mes, inicio: fechaInicioRaw, fin: fechaFinRaw, horaInicio: horaInicioRaw, horaFin: horaFinRaw, modalidad, sincronia };
   const nuevoConfig = { part, fechas, totalSes: nses, editable: true };
 
   CURSOS.push(nuevoCurso);
