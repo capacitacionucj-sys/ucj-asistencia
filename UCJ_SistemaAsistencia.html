@@ -682,6 +682,9 @@
           <div class="sb-item" id="nav-audit" onclick="showPanel('audit')">
             <i class="ti ti-clipboard-list"></i> Auditoría
           </div>
+          <div class="sb-item" id="nav-empresas" onclick="showPanel('empresas')">
+            <i class="ti ti-building"></i> Empresas
+          </div>
         </div>
         <div class="sb-bottom">
           <div class="sb-item sb-item-danger" onclick="confirmarCerrarAdmin()">
@@ -964,6 +967,24 @@
               <div class="audit-hdr"><span>Fecha y hora</span><span>Usuario</span><span>Acción</span><span>Tipo</span></div>
               <div id="audit-filas"><div style="padding:12px;color:#9ca3af;font-size:12px">Cargando...</div></div>
             </div>
+          </div>
+        </div>
+
+        <!-- EMPRESAS -->
+        <div class="panel" id="panel-empresas">
+          <div class="sec-header">
+            <div><div class="sec-titulo">Empresas</div><div class="sec-sub">Catálogo oficial de razones sociales · corrección de participantes</div></div>
+          </div>
+          <div style="padding:20px 24px;flex:1;overflow-y:auto">
+            <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px">Catálogo oficial (participantes actuales por empresa)</div>
+            <div id="empresas-catalogo" style="margin-bottom:24px;background:#fff;border:1px solid #e5e7eb;border-radius:var(--radius-lg);overflow:hidden"></div>
+
+            <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px">Corregir la empresa de un participante</div>
+            <div class="filtros-bar" style="margin-bottom:10px">
+              <i class="ti ti-search" style="color:#9ca3af;font-size:15px"></i>
+              <input type="text" placeholder="Buscar participante por nombre o DNI..." id="busca-part-empresa" oninput="buscarParticipanteEmpresa()" style="max-width:400px" />
+            </div>
+            <div id="empresas-busqueda-resultado" style="background:#fff;border:1px solid #e5e7eb;border-radius:var(--radius-lg);padding:10px 14px"></div>
           </div>
         </div>
 
@@ -2467,6 +2488,7 @@ function showPanel(p) {
   if (p === 'detalle') iniciarPollingAsistencia(); else detenerPollingAsistencia();
   if (p === 'dashboard') refrescarDashboardDesdeSheets();
   if (p === 'audit') cargarAuditoriaReal();
+  if (p === 'empresas') renderEmpresasPanel();
 }
 
 // Trae la asistencia real de Google Sheets para TODOS los cursos (no solo el curso
@@ -2940,6 +2962,104 @@ function cancelarMotivoAdmin() {
 
 function filtrarTablaAdmin(v) { renderTablaAdmin(v); }
 function filtrarEstadoAdmin(v) { renderTablaAdmin(document.querySelector('#panel-detalle input[type=text]')?.value||'', v); }
+
+// ── EMPRESAS (catálogo oficial y mantenimiento) ──────────
+const EMPRESAS_OFICIALES = [
+  'TEXCORP S.A.C.',
+  'EL S.A.',
+  'FASHION RETAIL S.A.C.',
+  'LUKERS S.A.C.',
+  'LUKERS ORIENTE S.A.C.',
+  'LUXCORP S.A.C.',
+  'UP GRADE S.A.C.',
+  'LLAVE EN MANO INMOBILIARIAS S.A.C.',
+  'SINERCORP S.A.C.',
+  'TANDEM EJE DE SOLUCIONES INTEGRADAS S.A.C.',
+  'LEATHERCORP S.A.C.',
+  'SAMITEX S.A.',
+  'GLOBAL SOURCING S.A.C.',
+  'PRIMATEX S.A.C.',
+  'PANORAMA OUTSOURCING S.A.',
+  'PANORAMA STAFF S.A.C.',
+  'TIENDAS EL ORIENTE S.A.C.'
+];
+
+// Mapeo de nombres/variantes con las que se cargaron los participantes → razón social oficial.
+// Se aplica una sola vez al cargar la página (ver normalizarEmpresas() en INIT).
+const EMPRESA_CANONICA = {
+  'Barrio': 'UP GRADE S.A.C.',
+  'EL': 'EL S.A.',
+  'Global Sourcing': 'GLOBAL SOURCING S.A.C.',
+  'LLAVE EN MANO INMOB': 'LLAVE EN MANO INMOBILIARIAS S.A.C.',
+  'Llave en Mano': 'LLAVE EN MANO INMOBILIARIAS S.A.C.',
+  'Lukers': 'LUKERS S.A.C.',
+  'LUKERS S.A.C': 'LUKERS S.A.C.',
+  'Panorama': 'PANORAMA OUTSOURCING S.A.',
+  'PANORAMA OUTSOURCING': 'PANORAMA OUTSOURCING S.A.',
+  'Primatex': 'PRIMATEX S.A.C.',
+  'Samitex': 'SAMITEX S.A.',
+  'SAMITEX SA': 'SAMITEX S.A.',
+  'Sinercorp': 'SINERCORP S.A.C.',
+  'SINERCORP': 'SINERCORP S.A.C.',
+  'Tándem': 'TANDEM EJE DE SOLUCIONES INTEGRADAS S.A.C.',
+  'TANDEM S.A.C': 'TANDEM EJE DE SOLUCIONES INTEGRADAS S.A.C.',
+  'Texcorp': 'TEXCORP S.A.C.'
+};
+
+function normalizarEmpresas() {
+  Object.values(CURSO_CONFIG).forEach(cfg => {
+    (cfg.part || []).forEach(p => {
+      if (p.e && EMPRESA_CANONICA[p.e]) p.e = EMPRESA_CANONICA[p.e];
+    });
+  });
+}
+
+function renderEmpresasPanel() {
+  const cont = document.getElementById('empresas-catalogo');
+  if (!cont) return;
+  const conteo = {};
+  EMPRESAS_OFICIALES.forEach(e => { conteo[e] = 0; });
+  Object.values(CURSO_CONFIG).forEach(cfg => (cfg.part || []).forEach(p => {
+    conteo[p.e] = (conteo[p.e] || 0) + 1;
+  }));
+  cont.innerHTML = Object.keys(conteo).map(e => {
+    const enCatalogo = EMPRESAS_OFICIALES.includes(e);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #f0f0f0;font-size:12px">
+      <span>${e}${enCatalogo ? '' : ' <span style="color:var(--rojo);font-size:10px;font-weight:600">· fuera del catálogo, corrígelo abajo</span>'}</span>
+      <span style="color:#6b7280">${conteo[e]} participante${conteo[e] === 1 ? '' : 's'}</span>
+    </div>`;
+  }).join('');
+}
+
+function buscarParticipanteEmpresa() {
+  const q = document.getElementById('busca-part-empresa').value.toLowerCase().trim();
+  const res = document.getElementById('empresas-busqueda-resultado');
+  if (q.length < 2) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:10px 0">Escribe al menos 2 caracteres para buscar.</div>'; return; }
+  const encontrados = [];
+  Object.keys(CURSO_CONFIG).forEach(idx => {
+    (CURSO_CONFIG[idx].part || []).forEach((p, pIdx) => {
+      if (p.n.toLowerCase().includes(q) || p.d.includes(q)) encontrados.push({ idx: Number(idx), pIdx, p });
+    });
+  });
+  if (!encontrados.length) { res.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:10px 0">No se encontraron resultados.</div>'; return; }
+  res.innerHTML = encontrados.map(({ idx, pIdx, p }) => {
+    const opciones = EMPRESAS_OFICIALES.map(e => `<option value="${e}" ${e === p.e ? 'selected' : ''}>${e}</option>`).join('');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:12px">
+      <span style="flex:1">${p.n} · DNI ${p.d} · <span style="color:#6b7280">${CURSOS[idx] ? CURSOS[idx].nom : ''}</span></span>
+      <select id="sel-emp-${idx}-${pIdx}" style="font-size:11px;padding:4px;border-radius:4px;border:1px solid #d1d5db;max-width:260px">${opciones}</select>
+      <button class="btn-sm" onclick="reasignarEmpresa(${idx},${pIdx})"><i class="ti ti-check"></i> Guardar</button>
+    </div>`;
+  }).join('');
+}
+
+function reasignarEmpresa(idx, pIdx) {
+  const sel = document.getElementById('sel-emp-' + idx + '-' + pIdx);
+  if (!sel) return;
+  CURSO_CONFIG[idx].part[pIdx].e = sel.value;
+  renderEmpresasPanel();
+  renderFiltroEmpresas();
+  mostrarToastSP('Empresa actualizada correctamente.', false);
+}
 
 // ── BUSCAR PARTICIPANTE ──────────────────────────────────
 let _ultimaBusquedaPart = {}; // DNI -> {n,c,e,d,cursos:[{nom,pct,cls,idx}]} — usado por exportarReporteParticipante()
@@ -4232,6 +4352,7 @@ cargarCursosNuevosGuardados();
 aplicarFechasOverride();
 aplicarHorarioOverride();
 aplicarParticipantesExtra();
+normalizarEmpresas();
 actualizarBadgeFac();
 renderCursos();
 poblarFiltrosDashboard();
