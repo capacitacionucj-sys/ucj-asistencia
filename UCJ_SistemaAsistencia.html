@@ -2226,6 +2226,7 @@ function cerrarSesion() {
   clearTimeout(countdownTimer);
   document.getElementById('timeout-banner').classList.remove('show');
   dniActual = '';
+  borrarSesionActiva();
   irInicio();
 }
 
@@ -2239,6 +2240,7 @@ function cerrarSesionAdmin() {
   document.getElementById('timeout-banner').classList.remove('show');
   dniActual = '';
   rolSesionActual = '';
+  borrarSesionActiva();
   irInicio();
 }
 
@@ -2344,6 +2346,7 @@ function loginAdmin() {
     const adm = ADMINS[dni];
     if (adm.primer) { ir('v-cambio-inicial'); return; }
     abrirAdmin(dni);
+    guardarSesionActiva('admin', dni);
   } else {
     err.style.display = 'block';
   }
@@ -2392,6 +2395,7 @@ function cambiarPassInicial() {
   ADMINS[dniActual].primer = false;
   lsGuardarAdmins(); // ← persistir cambio de contraseña
   abrirAdmin(dniActual);
+  guardarSesionActiva('admin', dniActual);
 }
 
 function abrirAdmin(dni) {
@@ -3838,6 +3842,7 @@ function loginFacilitador() {
       renderTablaFac();
       ir('v-registro');
       iniciarInactividad();
+      guardarSesionActiva('facilitador', dni);
       spCargarAsistencia().then(ok => {
         if (ok) {
           lsGuardarAsist();
@@ -4155,6 +4160,34 @@ renderAdminsPanel();
 initMsal().then(() => {
   if (spConectado) setTimeout(() => iniciarCargaSP(), 500);
 });
+
+// ── RESTAURAR SESIÓN (evita que F5 saque al usuario) ───────
+// Se guarda en sessionStorage (no localStorage): sobrevive a recargar la página,
+// pero se borra al cerrar la pestaña/navegador o al cerrar sesión explícitamente.
+const LS_SESION = 'ucj_sesion_activa';
+function guardarSesionActiva(rol, dni) {
+  try { sessionStorage.setItem(LS_SESION, JSON.stringify({ rol, dni })); } catch(e) {}
+}
+function borrarSesionActiva() {
+  try { sessionStorage.removeItem(LS_SESION); } catch(e) {}
+}
+(function restaurarSesionActiva() {
+  try {
+    const raw = sessionStorage.getItem(LS_SESION);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.rol === 'admin' && ADMINS[s.dni]) {
+      dniActual = s.dni;
+      abrirAdmin(s.dni);
+    } else if (s.rol === 'facilitador' && s.dni === FAC_DNI) {
+      const facInput = document.getElementById('fac-dni');
+      if (facInput) facInput.value = s.dni;
+      loginFacilitador();
+    } else {
+      borrarSesionActiva();
+    }
+  } catch(e) { console.warn('Restaurar sesión error:', e); }
+})();
 </script>
 </body>
 </html>
